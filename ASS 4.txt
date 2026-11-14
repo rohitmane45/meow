@@ -1,0 +1,456 @@
+Assignment 4 – Real Estate Price Data Cleaning and Feature Engineering
+Assignment number: 04 | Dataset: RealEstate_Prices.csv
+
+Problem Statement: To perform data cleaning and preprocessing on a real estate dataset by handling duplicate records, imputing missing values, detecting outliers, encoding categorical variables and creating new features for real estate price analysis.
+
+Note: The provided manual specifies Assignment 4 but does not show a separate official title. The title above describes the actual practical.
+===============================================================================
+1. Python Code – Without Comments
+import pandas as pd
+import numpy as np
+
+# 1. Load Real Estate Dataset
+df = pd.read_csv("RealEstate_Prices.csv")
+
+print("=== INITIAL DATA AUDIT ===")
+print("Initial Dimensions:", df.shape)
+print("Missing Values:\n", df.isnull().sum())
+print("Duplicate Rows:", df.duplicated().sum())
+
+
+# 2. Duplicate Handling
+df.drop_duplicates(inplace=True)
+
+
+# 3. Missing Value Imputation
+
+df["Area_SqFt"] = df["Area_SqFt"].fillna(
+    df["Area_SqFt"].median()
+)
+
+df["Furnishing"] = df["Furnishing"].fillna(
+    df["Furnishing"].mode()[0]
+)
+
+
+# 4. Outlier Detection and Treatment (IQR on Price)
+
+Q1 = df["Price"].quantile(0.25)
+Q3 = df["Price"].quantile(0.75)
+
+IQR = Q3 - Q1
+
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+outlier_mask = (
+    (df["Price"] < max(0, lower_bound)) |
+    (df["Price"] > upper_bound)
+)
+
+print(f"\nOutlier records detected in Price: {outlier_mask.sum()}")
+
+df_clean = df[
+    (df["Price"] > 0) &
+    (df["Price"] <= upper_bound)
+].copy()
+
+
+# 5. Categorical Encoding
+
+furnishing_hierarchy = {
+    "Unfurnished": 0,
+    "Semi-Furnished": 1,
+    "Furnished": 2
+}
+
+df_clean["Furnishing_Code"] = df_clean["Furnishing"].map(
+    furnishing_hierarchy
+)
+
+df_prepared = pd.get_dummies(
+    df_clean,
+    columns=["Location"],
+    drop_first=True
+)
+
+
+# 6. Feature Engineering
+
+df_prepared["Price_Per_SqFt"] = np.round(
+    df_prepared["Price"] / df_prepared["Area_SqFt"],
+    2
+)
+
+
+print("\n=== PREPARED DATASET OVERVIEW ===")
+
+print("Final Cleaned Dimensions:", df_prepared.shape)
+
+display_cols = [
+    "Property_ID",
+    "Area_SqFt",
+    "Bedrooms",
+    "Furnishing_Code",
+    "Price",
+    "Price_Per_SqFt",
+    "Location_Suburban",
+    "Location_Urban"
+]
+
+print(df_prepared[display_cols].head())
+========================================================================================================
+
+2. Python Code – With Comments and Explanation
+# Import required libraries
+
+import pandas as pd
+import numpy as np
+
+
+# 1. Load Real Estate Dataset
+
+# Read the real estate CSV file
+df = pd.read_csv("RealEstate_Prices.csv")
+
+# Display initial dataset information
+print("=== INITIAL DATA AUDIT ===")
+
+# Display number of rows and columns
+print("Initial Dimensions:", df.shape)
+
+# Count missing values in each column
+print("Missing Values:\n", df.isnull().sum())
+
+# Count duplicate records
+print("Duplicate Rows:", df.duplicated().sum())
+
+
+# 2. Duplicate Handling
+
+# Remove duplicate records from the dataset
+df.drop_duplicates(inplace=True)
+
+
+# 3. Missing Value Imputation
+
+# Replace missing Area_SqFt values with the median
+df["Area_SqFt"] = df["Area_SqFt"].fillna(
+    df["Area_SqFt"].median()
+)
+
+# Replace missing Furnishing values with the mode
+df["Furnishing"] = df["Furnishing"].fillna(
+    df["Furnishing"].mode()[0]
+)
+
+
+# 4. Outlier Detection and Treatment (IQR on Price)
+
+# Calculate first quartile
+Q1 = df["Price"].quantile(0.25)
+
+# Calculate third quartile
+Q3 = df["Price"].quantile(0.75)
+
+# Calculate Interquartile Range
+IQR = Q3 - Q1
+
+# Calculate lower and upper limits
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Identify outliers in the Price column
+outlier_mask = (
+    (df["Price"] < max(0, lower_bound)) |
+    (df["Price"] > upper_bound)
+)
+
+# Display number of detected outliers
+print(f"\nOutlier records detected in Price: {outlier_mask.sum()}")
+
+# Retain valid positive price records within the upper limit
+df_clean = df[
+    (df["Price"] > 0) &
+    (df["Price"] <= upper_bound)
+].copy()
+
+
+# 5. Categorical Encoding
+
+# Assign numerical values to furnishing categories
+furnishing_hierarchy = {
+    "Unfurnished": 0,
+    "Semi-Furnished": 1,
+    "Furnished": 2
+}
+
+# Convert furnishing categories into numerical values
+df_clean["Furnishing_Code"] = df_clean["Furnishing"].map(
+    furnishing_hierarchy
+)
+
+# Apply One-Hot Encoding to Location
+# drop_first=True removes the first category
+df_prepared = pd.get_dummies(
+    df_clean,
+    columns=["Location"],
+    drop_first=True
+)
+
+
+# 6. Feature Engineering
+
+# Calculate price per square foot
+df_prepared["Price_Per_SqFt"] = np.round(
+    df_prepared["Price"] / df_prepared["Area_SqFt"],
+    2
+)
+
+
+# Display prepared dataset
+
+print("\n=== PREPARED DATASET OVERVIEW ===")
+
+# Display final dataset dimensions
+print("Final Cleaned Dimensions:", df_prepared.shape)
+
+# Select required columns for display
+display_cols = [
+    "Property_ID",
+    "Area_SqFt",
+    "Bedrooms",
+    "Furnishing_Code",
+    "Price",
+    "Price_Per_SqFt",
+    "Location_Suburban",
+    "Location_Urban"
+]
+
+# Display first five records
+print(df_prepared[display_cols].head())
+
+Important Code Explanation
+Function / Concept	Explanation
+pd.read_csv()	Loads the CSV dataset.
+df.shape	Returns the number of rows and columns.
+isnull().sum()	Counts missing values in each column.
+duplicated().sum()	Counts duplicate records.
+drop_duplicates()	Removes duplicate records.
+median()	Calculates the middle value.
+mode()	Finds the most frequently occurring value.
+fillna()	Replaces missing values.
+quantile()	Calculates quartiles.
+IQR	Measures the spread of the middle 50% of data.
+outlier_mask	Identifies records outside specified price limits.
+map()	Converts categorical values into numerical values.
+pd.get_dummies()	Performs One-Hot Encoding.
+np.round()	Rounds numerical values.
+copy()	Creates an independent copy of selected data.
+head()	Displays the first five records.
+
+
+3. Expected Output
+A. Initial Data Audit
+=== INITIAL DATA AUDIT ===
+
+Initial Dimensions: (1004, 6)
+
+Missing Values:
+Property_ID    0
+Area_SqFt      6
+Bedrooms       0
+Location       0
+Furnishing     4
+Price          0
+dtype: int64
+
+Duplicate Rows: 4
+
+Outlier records detected in Price: 15
+
+
+B. Prepared Dataset Overview
+=== PREPARED DATASET OVERVIEW ===
+
+Final Cleaned Dimensions: (988, 9)
+
+
+C. Prepared Dataset Sample
+  Property_ID  Area_SqFt  Bedrooms  Furnishing_Code  Price  Price_Per_SqFt
+
+0 PROP_0001     2048.0       2           2         409000.0     199.71
+1 PROP_0002     1730.0       2           2         342800.0     198.15
+2 PROP_0003     2123.0       3           2         449600.0     211.78
+3 PROP_0004     2561.0       3           1         441000.0     172.20
+4 PROP_0005     1682.0       1           1         269800.0     160.40
+
+
+The location columns Location_Suburban and Location_Urban are also included in the actual output. Values are based on the supplied assignment image.
+
+4. SPPU Practical Viva Questions and Answers
+These questions cover the concepts and Python functions used in Assignment 4.
+A. Basic Data Cleaning Questions
+Q1. What is Data Cleaning?
+
+Answer: Data Cleaning is the process of removing incorrect, duplicate, missing and inconsistent data from a dataset.
+
+Q2. What is Data Preprocessing?
+
+Answer: Data Preprocessing is the process of converting raw data into a clean and structured format before applying machine learning algorithms.
+
+Q3. What is Pandas?
+
+Answer: Pandas is a Python library used for data manipulation, cleaning and analysis.
+
+Q4. What is NumPy?
+
+Answer: NumPy is a Python library used for numerical calculations and mathematical operations.
+
+Q5. What is the use of df.shape?
+
+Answer: It returns the number of rows and columns in a dataset.
+B. Missing Values and Duplicate Handling
+Q6. What are missing values?
+
+Answer: Missing values are data entries that are not available or recorded in a dataset.
+
+Q7. How do you identify missing values?
+
+Answer: We use isnull().sum() to count missing values in each column.
+
+Q8. What is the difference between mean, median and mode?
+
+Answer:
+- Mean: Average of all values.
+- Median: Middle value of sorted data.
+- Mode: Most frequently occurring value.
+Q9. Why do we use median for Area_SqFt?
+
+Answer: Median is less affected by extreme values and is suitable for imputing numerical data.
+
+Q10. Why do we use mode for Furnishing?
+
+Answer: Furnishing is categorical data, so we use the most frequently occurring category to replace missing values.
+
+Q11. What is the use of fillna()?
+
+Answer: It replaces missing values with a specified value.
+
+Q12. What is the use of drop_duplicates()?
+
+Answer: It removes repeated records from the dataset.
+C. Outlier Detection Questions
+Q13. What is an outlier?
+
+Answer: An outlier is a data value that is significantly different from most other observations.
+
+Q14. What is IQR?
+
+Answer: IQR stands for Interquartile Range. It measures the spread of the middle 50% of data.
+\[
+IQR=Q3-Q1
+\]
+
+Q15. What are Q1 and Q3?
+
+Answer:
+- Q1 is the first quartile (25th percentile).
+- Q3 is the third quartile (75th percentile).
+Q16. What is the IQR formula for detecting outliers?
+
+Answer:
+\[
+Lower=Q1-1.5\times IQR
+\]
+
+\[
+Upper=Q3+1.5\times IQR
+\]
+
+Values outside these limits are generally considered outliers.
+
+Q17. Why do we remove outliers?
+
+Answer: Extreme values can affect statistical analysis and certain machine learning algorithms. Removing invalid or extreme values can improve data quality.
+
+Q18. What is the purpose of outlier_mask?
+
+Answer: It identifies records whose prices are below the allowed lower threshold or above the upper IQR limit.
+D. Categorical Encoding Questions
+Q19. What is categorical data?
+
+Answer: Categorical data represents information in the form of groups or labels, such as Furnishing and Location.
+
+Q20. What is Ordinal Encoding?
+
+Answer: Ordinal Encoding converts categorical values into numerical values according to their natural order.
+
+Example:
+Furnishing	Code
+Unfurnished	0
+Semi-Furnished	1
+Furnished	2
+
+Q21. What is One-Hot Encoding?
+
+Answer: One-Hot Encoding converts categorical values into separate binary columns containing 0 and 1.
+
+Q22. What is the difference between Ordinal Encoding and One-Hot Encoding?
+
+Answer:
+Ordinal Encoding	One-Hot Encoding
+Assigns numerical values to categories.	Creates separate binary columns.
+Represents an order.	Does not assume an order.
+Example: Furnishing.	Example: Location.
+
+Q23. What is the use of map()?
+
+Answer: It replaces existing categorical values with corresponding values from a dictionary.
+
+Q24. What is the use of pd.get_dummies()?
+
+Answer: It converts categorical columns into numerical binary columns.
+
+Q25. Why do we use drop_first=True?
+
+Answer: It removes the first dummy variable to avoid redundant columns and the dummy variable trap.
+E. Feature Engineering Questions
+Q26. What is Feature Engineering?
+
+Answer: Feature Engineering is the process of creating new meaningful features from existing dataset columns to improve data analysis and machine learning performance.
+
+Q27. What is Price Per Square Foot?
+
+Answer: It represents the price of a property divided by its total area in square feet.
+\[
+Price\ Per\ SqFt=\frac{Price}{Area\_SqFt}
+\]
+
+Q28. Why is Price_Per_SqFt useful?
+
+Answer: It helps compare property prices fairly, even when properties have different areas.
+
+Q29. What is the use of np.round()?
+
+Answer: It rounds numerical values to a specified number of decimal places.
+
+Q30. What is the use of .copy()?
+
+Answer: It creates a separate copy of the selected dataset instead of working on a view of the original data.
+F. Real Estate Domain Questions
+Q31. What is a real estate dataset?
+
+Answer: A real estate dataset contains property-related information such as price, area, bedrooms, location and furnishing.
+
+Q32. Why is Location important in real estate price prediction?
+
+Answer: Property prices depend heavily on location because facilities, connectivity, demand and surrounding infrastructure differ between areas.
+
+Q33. Why do we need to preprocess real estate data?
+
+Answer: To remove duplicate records, handle missing values, treat outliers and convert categorical information into numerical form.
+
+Q34. What is the final objective of this assignment?
+
+Answer: The objective is to prepare a clean and structured real estate dataset that can be used for further analysis and machine learning applications such as house price prediction.

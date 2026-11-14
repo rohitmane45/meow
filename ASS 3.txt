@@ -1,0 +1,491 @@
+Assignment 3 – Data Cleaning and Preparation
+Topic: Analyzing Customer Churn in a Telecommunications Dataset.
+
+Problem Statement: To perform data cleaning, remove duplicate records, handle missing values, detect and remove outliers, perform feature engineering, encode categorical variables and standardize numerical features for machine learning.
+
+Dataset: Telecom_Customer_Churn.csv
+
+1. Python Code – Without Comments
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
+# 1. Load Raw Dataset
+df = pd.read_csv("Telecom_Customer_Churn.csv")
+print(f"Initial raw shape: {df.shape}")
+
+
+# 2. Duplicate Detection & Removal
+duplicates = df.duplicated().sum()
+print(f"Duplicate rows identified: {duplicates}")
+df.drop_duplicates(inplace=True)
+
+
+# 3. Clean Missing and White-space Strings
+df["TotalCharges"] = pd.to_numeric(
+    df["TotalCharges"].astype(str).str.strip(),
+    errors="coerce"
+)
+
+# Impute missing values
+median_tenure = df["tenure"].median()
+median_tc = df["TotalCharges"].median()
+
+df["tenure"].fillna(median_tenure, inplace=True)
+df["TotalCharges"].fillna(median_tc, inplace=True)
+
+
+# 4. Outlier Handling (IQR Filtering & Domain Thresholds)
+Q1 = df["MonthlyCharges"].quantile(0.25)
+Q3 = df["MonthlyCharges"].quantile(0.75)
+
+IQR = Q3 - Q1
+upper_limit = Q3 + 1.5 * IQR
+
+df_clean = df[
+    (df["MonthlyCharges"] >= 0) &
+    (df["MonthlyCharges"] <= upper_limit)
+].copy()
+
+print(f"Rows retained after outlier treatment: {df_clean.shape[0]}")
+
+
+# 5. Feature Engineering
+
+# Tenure cohort binning
+df_clean["tenure_cohort"] = pd.cut(
+    df_clean["tenure"],
+    bins=[0, 12, 24, 48, 72],
+    labels=["0-1 yr", "1-2 yrs", "2-4 yrs", "4+ yrs"]
+)
+
+# Spend-to-tenure velocity ratio
+df_clean["charges_per_tenure_ratio"] = (
+    df_clean["TotalCharges"] / (df_clean["tenure"] + 1)
+)
+
+# Target encoding
+df_clean["Churn_Binary"] = df_clean["Churn"].map(
+    {"Yes": 1, "No": 0}
+)
+
+
+# One-hot encoding for categorical variables
+df_prepared = pd.get_dummies(
+    df_clean,
+    columns=["Contract", "tenure_cohort"],
+    drop_first=True
+)
+
+
+# Standardize numerical features
+num_cols = [
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges",
+    "charges_per_tenure_ratio"
+]
+
+scaler = StandardScaler()
+
+df_prepared[num_cols] = scaler.fit_transform(
+    df_prepared[num_cols]
+)
+
+
+print("\n=== PREPARED DATASET SAMPLE ===")
+
+print(
+    df_prepared[
+        ["customerID", "tenure", "MonthlyCharges",
+         "TotalCharges", "Churn_Binary"]
+    ].head()
+)
+
+
+print("\n--- Churn Rate Across Contract Types ---")
+
+print(
+    df_clean.groupby("Contract")["Churn_Binary"]
+    .mean()
+    .apply(lambda x: f"{x * 100:.2f}%")
+)
+
+
+
+==================================================================================
+2. Python Code – With Comments and Explanation
+# Import required libraries
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
+
+# 1. Load Raw Dataset
+
+# Read the telecom customer churn CSV file
+df = pd.read_csv("Telecom_Customer_Churn.csv")
+
+# Display initial number of rows and columns
+print(f"Initial raw shape: {df.shape}")
+
+
+# 2. Duplicate Detection & Removal
+
+# Identify duplicate records
+duplicates = df.duplicated().sum()
+
+print(f"Duplicate rows identified: {duplicates}")
+
+# Remove duplicate records
+df.drop_duplicates(inplace=True)
+
+
+# 3. Clean Missing and White-space Strings
+
+# Remove unwanted spaces and convert TotalCharges into numeric format
+# Invalid values are converted into NaN
+df["TotalCharges"] = pd.to_numeric(
+    df["TotalCharges"].astype(str).str.strip(),
+    errors="coerce"
+)
+
+
+# Impute missing values
+
+# Calculate median of tenure
+median_tenure = df["tenure"].median()
+
+# Calculate median of TotalCharges
+median_tc = df["TotalCharges"].median()
+
+# Replace missing values with median
+df["tenure"].fillna(median_tenure, inplace=True)
+
+df["TotalCharges"].fillna(median_tc, inplace=True)
+
+
+# 4. Outlier Handling (IQR Filtering & Domain Thresholds)
+
+# Calculate first quartile
+Q1 = df["MonthlyCharges"].quantile(0.25)
+
+# Calculate third quartile
+Q3 = df["MonthlyCharges"].quantile(0.75)
+
+# Calculate Interquartile Range
+IQR = Q3 - Q1
+
+# Calculate upper outlier limit
+upper_limit = Q3 + 1.5 * IQR
+
+# Remove negative and extreme MonthlyCharges values
+df_clean = df[
+    (df["MonthlyCharges"] >= 0) &
+    (df["MonthlyCharges"] <= upper_limit)
+].copy()
+
+# Display remaining records
+print(f"Rows retained after outlier treatment: {df_clean.shape[0]}")
+
+
+# 5. Feature Engineering
+
+# Divide customers into different tenure groups
+df_clean["tenure_cohort"] = pd.cut(
+    df_clean["tenure"],
+    bins=[0, 12, 24, 48, 72],
+    labels=["0-1 yr", "1-2 yrs", "2-4 yrs", "4+ yrs"]
+)
+
+
+# Calculate charges per tenure ratio
+df_clean["charges_per_tenure_ratio"] = (
+    df_clean["TotalCharges"] / (df_clean["tenure"] + 1)
+)
+
+
+# Convert Churn values into binary format
+# Yes = 1 and No = 0
+df_clean["Churn_Binary"] = df_clean["Churn"].map(
+    {"Yes": 1, "No": 0}
+)
+
+
+# One-hot encoding for categorical variables
+
+# Convert Contract and tenure_cohort into numerical columns
+df_prepared = pd.get_dummies(
+    df_clean,
+    columns=["Contract", "tenure_cohort"],
+    drop_first=True
+)
+
+
+# Standardize numerical features
+
+# Select numerical columns
+num_cols = [
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges",
+    "charges_per_tenure_ratio"
+]
+
+# Create StandardScaler object
+scaler = StandardScaler()
+
+# Standardize selected numerical columns
+df_prepared[num_cols] = scaler.fit_transform(
+    df_prepared[num_cols]
+)
+
+
+# Display prepared dataset
+
+print("\n=== PREPARED DATASET SAMPLE ===")
+
+print(
+    df_prepared[
+        ["customerID", "tenure", "MonthlyCharges",
+         "TotalCharges", "Churn_Binary"]
+    ].head()
+)
+
+
+# Calculate churn rate across contract types
+
+print("\n--- Churn Rate Across Contract Types ---")
+
+print(
+    df_clean.groupby("Contract")["Churn_Binary"]
+    .mean()
+    .apply(lambda x: f"{x * 100:.2f}%")
+)
+
+
+Important Code Explanation
+Function / Concept	Explanation
+pd.read_csv()	Reads the CSV dataset.
+df.shape	Returns number of rows and columns.
+duplicated()	Identifies duplicate records.
+drop_duplicates()	Removes duplicate records.
+str.strip()	Removes leading and trailing spaces.
+pd.to_numeric()	Converts values into numeric format.
+errors="coerce"	Converts invalid values into NaN.
+median()	Calculates the middle value of sorted data.
+fillna()	Replaces missing values.
+quantile()	Calculates quartiles.
+IQR	Measures the spread of the middle 50% of data.
+pd.cut()	Divides numerical values into categories.
+map()	Maps existing values to new values.
+pd.get_dummies()	Performs one-hot encoding.
+StandardScaler()	Standardizes numerical features.
+fit_transform()	Learns scaling parameters and transforms data.
+groupby()	Groups records based on a column.
+head()	Displays the first five rows.
+
+3. Expected Output
+A. Data Cleaning Summary
+Initial raw shape: (1005, 6)
+
+Duplicate rows identified: 5
+
+Rows retained after outlier treatment: 998
+
+
+B. Prepared Dataset Sample
+=== PREPARED DATASET SAMPLE ===
+
+  customerID  tenure  MonthlyCharges  TotalCharges  Churn_Binary
+
+0 CUST-0001  0.781210  1.258901      1.354120      0
+1 CUST-0002 -1.023801  1.171052     -0.622619      0
+2 CUST-0003  1.220261 -0.320743      0.407515      0
+3 CUST-0004 -0.731100  0.612502     -0.491612      0
+4 CUST-0005 -0.584750 -0.982928     -0.913840      0
+
+
+C. Churn Rate Across Contract Types
+--- Churn Rate Across Contract Types ---
+
+Contract
+Month-to-month    27.83%
+One year          24.29%
+Two year          21.65%
+
+
+Output values are reproduced from your assignment image. Actual results depend on the CSV dataset.
+
+4. SPPU Practical Viva Questions and Answers
+These questions are focused on the actual code and concepts used in Assignment 3.
+A. Basic Data Cleaning Questions
+Q1. What is Data Cleaning?
+
+Answer: Data Cleaning is the process of removing incorrect, duplicate, missing and inconsistent data to improve data quality.
+
+Q2. What is Data Preprocessing?
+
+Answer: Data Preprocessing is the process of converting raw data into a clean and suitable format before applying machine learning algorithms.
+
+Q3. Why is data cleaning important in Machine Learning?
+
+Answer: It improves data quality, reduces errors and helps machine learning models produce more reliable results.
+
+Q4. What is a duplicate record?
+
+Answer: A duplicate record is a repeated entry in a dataset containing the same information.
+
+Q5. How do you identify duplicate records in Pandas?
+
+Answer: We use the duplicated() function.
+
+Q6. How do you remove duplicate records?
+
+Answer: We use the drop_duplicates() function.
+B. Missing Values and Data Handling
+Q7. What is a missing value?
+
+Answer: A missing value is a value that is not available or recorded in a dataset. Pandas generally represents it as NaN.
+
+Q8. What is imputation?
+
+Answer: Imputation is the process of replacing missing values with suitable values such as mean, median or mode.
+
+Q9. What is the difference between mean and median?
+
+Answer:
+- Mean: Average of all values.
+- Median: Middle value after arranging values in ascending order.
+Q10. Why do we use median instead of mean?
+
+Answer: Median is less affected by extreme values and is useful when the dataset contains outliers.
+
+Q11. What is the use of fillna()?
+
+Answer: It replaces missing values with a specified value.
+
+Q12. What is the use of str.strip()?
+
+Answer: It removes unwanted leading and trailing spaces from string values.
+
+Q13. What is the use of errors="coerce"?
+
+Answer: It converts invalid numerical values into NaN instead of generating an error.
+C. Outlier Detection Questions
+Q14. What is an outlier?
+
+Answer: An outlier is a data value that is significantly different from most other values in a dataset.
+
+Q15. What is IQR?
+
+Answer: IQR stands for Interquartile Range. It measures the spread of the middle 50% of the dataset.
+\[
+IQR = Q3-Q1
+\]
+
+Q16. What are Q1 and Q3?
+
+Answer:
+- Q1: First quartile or 25th percentile.
+- Q3: Third quartile or 75th percentile.
+Q17. What is the formula for detecting outliers using IQR?
+
+Answer:
+\[
+Lower=Q1-1.5(IQR)
+\]
+
+\[
+Upper=Q3+1.5(IQR)
+\]
+
+Values outside these limits are generally considered outliers.
+
+Q18. How are outliers handled in this program?
+
+Answer: We calculate Q1, Q3 and IQR for MonthlyCharges. Then we retain non-negative values that are below or equal to the upper IQR limit.
+D. Feature Engineering Questions
+Q19. What is Feature Engineering?
+
+Answer: Feature Engineering is the process of creating new useful features from existing data to improve machine learning performance.
+
+Q20. What is pd.cut()?
+
+Answer: It divides continuous numerical data into different categories or intervals.
+
+Q21. What is categorical data?
+
+Answer: Categorical data represents values in groups or categories, such as gender, contract type or customer status.
+
+Q22. What is encoding?
+
+Answer: Encoding is the process of converting categorical data into numerical form so machine learning algorithms can process it.
+
+Q23. What is One-Hot Encoding?
+
+Answer: One-Hot Encoding converts categorical values into separate binary columns containing 0 and 1.
+
+Q24. What is Target Encoding in this program?
+
+Answer: In this program, the Churn column is mapped into binary values:
+- Yes = 1
+- No = 0
+Q25. What is the use of drop_first=True?
+
+Answer: It removes the first dummy column to reduce redundant information and avoid the dummy variable trap.
+E. Standardization and Machine Learning
+Q26. What is Standardization?
+
+Answer: Standardization is the process of transforming numerical data so that it has a mean of approximately 0 and standard deviation of 1.
+
+Q27. Which library is used for standardization?
+
+Answer: We use StandardScaler from the Scikit-learn preprocessing module.
+
+Q28. What is the formula for Standardization?
+\[
+Z=\frac{X-\mu}{\sigma}
+\]
+
+Where:
+- X = Original value
+- μ = Mean
+- σ = Standard deviation
+- Z = Standardized value
+Q29. Why is standardization required?
+
+Answer: It brings numerical features to a common scale so that features with larger values do not unnecessarily dominate certain machine learning algorithms.
+
+Q30. What is the difference between normalization and standardization?
+
+Answer:
+Normalization	Standardization
+Usually scales values between 0 and 1.	Makes mean 0 and standard deviation 1.
+Uses minimum and maximum values.	Uses mean and standard deviation.
+Uses MinMaxScaler commonly.	Uses StandardScaler commonly.
+
+F. Customer Churn Questions
+Q31. What is Customer Churn?
+
+Answer: Customer Churn means customers stop using a company's products or services.
+
+Q32. Why is customer churn prediction important?
+
+Answer: It helps companies identify customers who may leave and take preventive actions to retain them.
+
+Q33. What does Churn = Yes represent?
+
+Answer: It means the customer has left or discontinued the service.
+
+Q34. What is a Churn Rate?
+
+Answer: Churn Rate is the percentage of customers who leave a company during a particular period.
+\[
+Churn\ Rate=\frac{Customers\ Lost}{Total\ Customers}\times100
+\]
+
+Q35. What is the purpose of grouping by Contract?
+
+Answer: It helps compare the churn rate among different contract types, such as monthly, one-year and two-year contracts.

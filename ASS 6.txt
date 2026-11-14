@@ -1,0 +1,346 @@
+Assignment 6 – Retail Sales Data Analysis and Regional Performance Aggregation
+Assignment Number: 06 | Dataset: Retail_Sales_Data.csv
+
+Problem Statement: To perform retail sales data analysis using Python Pandas by calculating regional sales performance, aggregating sales data, creating pivot tables for product categories and identifying the top-performing product categories.
+
+Libraries Used:
+
+- Pandas – Data manipulation and analysis.
+
+1. Python Code – Without Comments
+import pandas as pd
+
+# 1. Load Retail Sales Data
+
+df_sales = pd.read_csv("Retail_Sales_Data.csv")
+
+
+# 2. Regional Performance Aggregation
+
+print("=== REGIONAL SALES PERFORMANCE SUMMARY ===")
+
+regional_agg = df_sales.groupby("Region").agg(
+    Total_Revenue=("Sales_Amount", "sum"),
+    Total_Units_Sold=("Units_Sold", "sum"),
+    Average_Order_Value=("Sales_Amount", "mean"),
+    Transaction_Count=("Transaction_ID", "count")
+).sort_values(by="Total_Revenue", ascending=False)
+
+print(regional_agg.round(2))
+
+
+# 3. Pivot Breakdown: Sales by Region across Categories
+
+print("\n=== REGIONAL SALES PER PRODUCT CATEGORY ===")
+
+pivot_table = pd.pivot_table(
+    df_sales,
+    values="Sales_Amount",
+    index="Region",
+    columns="Category",
+    aggfunc="sum",
+    fill_value=0
+)
+
+print(pivot_table.round(2))
+
+
+# 4. Top Performing Product Categories Overall
+
+print("\n=== TOP PERFORMING CATEGORIES (OVERALL) ===")
+
+category_summary = df_sales.groupby("Category").agg(
+    Total_Sales=("Sales_Amount", "sum"),
+    Total_Units=("Units_Sold", "sum"),
+    Transactions=("Transaction_ID", "count")
+).sort_values(by="Total_Sales", ascending=False)
+
+print(category_summary.round(2))
+
+
+===========================================================================================================================
+
+
+2. Python Code – With Comments and Explanation
+# Import Pandas library
+
+import pandas as pd
+
+
+# 1. Load Retail Sales Data
+
+# Read retail sales data from CSV file
+df_sales = pd.read_csv("Retail_Sales_Data.csv")
+
+
+# 2. Regional Performance Aggregation
+
+# Display heading
+print("=== REGIONAL SALES PERFORMANCE SUMMARY ===")
+
+# Group records according to Region
+# Calculate total revenue, total units, average order value
+# and transaction count for each region
+
+regional_agg = df_sales.groupby("Region").agg(
+
+    # Calculate total sales revenue
+    Total_Revenue=("Sales_Amount", "sum"),
+
+    # Calculate total units sold
+    Total_Units_Sold=("Units_Sold", "sum"),
+
+    # Calculate average order value
+    Average_Order_Value=("Sales_Amount", "mean"),
+
+    # Count total transactions
+    Transaction_Count=("Transaction_ID", "count")
+
+# Sort regions by total revenue in descending order
+).sort_values(by="Total_Revenue", ascending=False)
+
+# Display regional summary rounded to 2 decimal places
+print(regional_agg.round(2))
+
+
+# 3. Pivot Breakdown: Sales by Region across Categories
+
+# Display heading
+print("\n=== REGIONAL SALES PER PRODUCT CATEGORY ===")
+
+# Create a pivot table to calculate category-wise sales
+# for each region
+
+pivot_table = pd.pivot_table(
+
+    df_sales,
+
+    # Values to be aggregated
+    values="Sales_Amount",
+
+    # Rows represent regions
+    index="Region",
+
+    # Columns represent product categories
+    columns="Category",
+
+    # Calculate total sales using sum
+    aggfunc="sum",
+
+    # Replace missing combinations with zero
+    fill_value=0
+)
+
+# Display pivot table rounded to 2 decimal places
+print(pivot_table.round(2))
+
+
+# 4. Top Performing Product Categories Overall
+
+# Display heading
+print("\n=== TOP PERFORMING CATEGORIES (OVERALL) ===")
+
+# Group data according to product category
+# Calculate total sales, units and transactions
+
+category_summary = df_sales.groupby("Category").agg(
+
+    # Calculate total sales for each category
+    Total_Sales=("Sales_Amount", "sum"),
+
+    # Calculate total units sold
+    Total_Units=("Units_Sold", "sum"),
+
+    # Count total transactions
+    Transactions=("Transaction_ID", "count")
+
+# Sort categories by total sales in descending order
+).sort_values(by="Total_Sales", ascending=False)
+
+# Display category summary rounded to 2 decimal places
+print(category_summary.round(2))
+
+============================================================================================
+
+Important Code Explanation
+Function / Concept	Explanation
+pd.read_csv()	Loads the CSV dataset.
+groupby()	Groups data based on a particular column.
+agg()	Performs multiple aggregation operations.
+sum()	Calculates the total.
+mean()	Calculates the average.
+count()	Counts the number of records.
+sort_values()	Sorts data according to a column.
+ascending=False	Sorts values in descending order.
+pivot_table()	Creates a summarized table using rows and columns.
+fill_value=0	Replaces missing combinations with zero.
+round(2)	Rounds numerical values to two decimal places.
+
+
+3. Output
+A. Regional Sales Performance Summary
+=== REGIONAL SALES PERFORMANCE SUMMARY ===
+
+        Total_Revenue  Total_Units_Sold  Average_Order_Value  Transaction_Count
+
+Region
+Central      380675.0              3263               863.21                441
+East         369580.0              2876               950.08                389
+South        364835.0              2868               947.62                385
+North        321535.0              2945               835.16                385
+
+
+B. Regional Sales Per Product Category
+The program displays a pivot table with:
+- Rows: Region
+- Columns: Category
+- Values: Total Sales Amount
+C. Top Performing Categories Overall
+The program displays a category-wise summary containing:
+- Total Sales
+- Total Units
+- Number of Transactions
+Note: Your supplied manual image shows the exact output for the regional summary only. The numerical outputs for the pivot table and category summary are not visible, so they are not fabricated here.
+================================================================================================================================
+4. SPPU Practical Viva Questions and Answers
+These questions are based on the actual Python code and concepts used in Assignment 6.
+A. Basic Pandas Questions
+Q1. What is Pandas?
+
+Answer: Pandas is a Python library used for data manipulation, data analysis and handling structured datasets.
+
+Q2. What is a DataFrame?
+
+Answer: A DataFrame is a two-dimensional data structure consisting of rows and columns.
+
+Q3. What is the use of read_csv()?
+
+Answer: It reads data from a CSV file and stores it in a Pandas DataFrame.
+
+Q4. What is Retail Sales Analysis?
+
+Answer: Retail Sales Analysis is the process of studying sales data to understand revenue, products sold, customer transactions and regional performance.
+
+Q5. What is aggregation?
+
+Answer: Aggregation is the process of summarizing multiple records into meaningful values such as sum, average and count.
+B. GroupBy and Aggregation Questions
+Q6. What is groupby() in Pandas?
+
+Answer: The groupby() function groups data based on one or more columns so that we can perform calculations on each group.
+
+Q7. Why do we use groupby("Region")?
+
+Answer: We use it to divide retail sales records according to different regions such as North, South, East and Central.
+
+Q8. What is the use of agg()?
+
+Answer: The agg() function performs multiple aggregation operations such as sum, mean and count on grouped data.
+
+Q9. What is the difference between sum() and mean()?
+
+Answer:
+- sum() calculates the total of values.
+- mean() calculates the average of values.
+Q10. What is the use of count()?
+
+Answer: It counts the number of non-null values in a column.
+
+Q11. What is Total Revenue?
+
+Answer: Total Revenue is the total amount of money generated from sales.
+
+Q12. What is Average Order Value (AOV)?
+
+Answer: Average Order Value represents the average sales amount per transaction.
+\[
+AOV=\frac{Total\ Revenue}{Number\ of\ Transactions}
+\]
+
+Q13. What is Transaction Count?
+
+Answer: It represents the total number of transaction records in a particular group.
+
+Q14. What is the purpose of sort_values()?
+
+Answer: It sorts the DataFrame based on the specified column.
+
+Q15. What does ascending=False mean?
+
+Answer: It sorts values in descending order, from highest to lowest.
+C. Pivot Table Questions
+Q16. What is a Pivot Table?
+
+Answer: A Pivot Table is a data summarization tool used to organize and analyze data based on rows, columns and aggregate values.
+
+Q17. What is the use of pd.pivot_table()?
+
+Answer: It creates a summarized table by grouping data using selected rows and columns and applying an aggregation function.
+
+Q18. What is the purpose of index="Region"?
+
+Answer: It displays different regions as rows in the pivot table.
+
+Q19. What is the purpose of columns="Category"?
+
+Answer: It displays different product categories as columns in the pivot table.
+
+Q20. What is the use of values="Sales_Amount"?
+
+Answer: It specifies the numerical column on which aggregation is performed.
+
+Q21. What is aggfunc="sum"?
+
+Answer: It calculates the total sales amount for each region and product category combination.
+
+Q22. What is the use of fill_value=0?
+
+Answer: It replaces missing values in the pivot table with zero.
+
+Q23. What is the difference between GroupBy and Pivot Table?
+
+Answer:
+GroupBy	Pivot Table
+Groups data based on columns.	Summarizes data using rows and columns.
+Performs aggregation.	Performs aggregation in a tabular format.
+Uses groupby().	Uses pivot_table().
+Useful for regional summaries.	Useful for regional and category comparisons.
+
+D. Business Analytics Questions
+Q24. What is Business Analytics?
+
+Answer: Business Analytics is the process of analyzing business data to identify patterns and support better decision-making.
+
+Q25. What is the objective of this assignment?
+
+Answer: The objective is to analyze retail sales performance across different regions and product categories using aggregation and pivot tables.
+
+Q26. Why do we calculate total units sold?
+
+Answer: It helps us understand the quantity of products sold in each region.
+
+Q27. Why do we identify top-performing product categories?
+
+Answer: It helps businesses understand which product categories generate the highest revenue.
+
+Q28. Which region has the highest total revenue according to the output?
+
+Answer: Central region has the highest total revenue of ₹3,80,675.
+
+Q29. Which region has the highest Average Order Value?
+
+Answer: East region has the highest Average Order Value of ₹950.08.
+
+Q30. Which region has the highest transaction count?
+
+Answer: Central region has the highest transaction count of 441.
+
+Q31. Why is sales analysis important for businesses?
+
+Answer: It helps businesses identify profitable regions, understand customer purchasing patterns and improve sales strategies.
+
+Q32. What is the difference between revenue and profit?
+
+Answer:
+- Revenue is the total money earned through sales.
+- Profit is the money remaining after deducting expenses from revenue.

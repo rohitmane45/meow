@@ -1,0 +1,437 @@
+Assignment 2 – Interacting with Web APIs
+Official Assignment Title: Interacting with Web APIs – Analyzing Weather Data from OpenWeatherMap
+Dataset: Weather data retrieved from OpenWeatherMap API.
+Problem Statement: To retrieve weather data using the OpenWeatherMap API, process weather attributes, perform statistical analysis, calculate correlations and visualize weather trends.
+
+
+1. Python Code – Without Comments
+Clean code – ready to copy into a .txt or .py file.
+import requests
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def fetch_weather_forecast(city="Pune", api_key="YOUR_API_KEY"):
+
+    url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={api_key}&units=metric"
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        records = []
+
+        for entry in data["list"]:
+            records.append({
+                "timestamp": pd.to_datetime(entry["dt_txt"]),
+                "temperature_c": entry["main"]["temp"],
+                "humidity_pct": entry["main"]["humidity"],
+                "pressure_hpa": entry["main"]["pressure"],
+                "wind_speed_mps": entry["wind"]["speed"]
+            })
+
+        return pd.DataFrame(records)
+
+    except Exception as e:
+
+        print(f"Notice: Simulated data used ({e}).")
+
+        dates = pd.date_range(
+            start="2026-10-01 00:00",
+            periods=24,
+            freq="3h"
+        )
+
+        return pd.DataFrame({
+            "timestamp": dates,
+            "temperature_c": np.round(
+                24.0 + 6.0 * np.sin(np.linspace(0, 3*np.pi, 24)), 2
+            ),
+            "humidity_pct": np.round(
+                65.0 - 15.0 * np.sin(np.linspace(0, 3*np.pi, 24)), 1
+            ),
+            "pressure_hpa": np.round(
+                1012.0 + np.random.normal(0, 1.2, 24), 1
+            ),
+            "wind_speed_mps": np.round(
+                np.random.uniform(2.0, 7.5, 24), 2
+            )
+        })
+
+
+df_weather = fetch_weather_forecast(
+    city="Pune",
+    api_key="demo_key"
+)
+
+
+print("=== WEATHER ATTRIBUTES DESCRIPTIVE SUMMARY ===")
+
+print(
+    df_weather[
+        ["temperature_c", "humidity_pct", "pressure_hpa", "wind_speed_mps"]
+    ].describe()
+)
+
+
+print("\n--- Attribute Correlation Matrix ---")
+
+print(
+    df_weather[
+        ["temperature_c", "humidity_pct", "pressure_hpa"]
+    ].corr()
+)
+
+
+plt.figure(figsize=(10, 5))
+
+plt.plot(
+    df_weather["timestamp"],
+    df_weather["temperature_c"],
+    marker="o",
+    color="crimson",
+    label="Temperature (°C)"
+)
+
+plt.plot(
+    df_weather["timestamp"],
+    df_weather["humidity_pct"],
+    marker="s",
+    color="royalblue",
+    label="Humidity (%)"
+)
+
+plt.title(
+    "Weather Trends Over 72-Hour Period (OpenWeatherMap API)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+plt.xlabel("Timestamp")
+plt.ylabel("Value")
+plt.xticks(rotation=45)
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.legend()
+plt.tight_layout()
+
+plt.savefig("weather_trends.png", dpi=200)
+plt.show()
+
+
+
+2. Python Code – With Comments and Explanation
+# Import required libraries
+
+import requests
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# Function to fetch weather forecast from OpenWeatherMap API
+
+def fetch_weather_forecast(city="Pune", api_key="YOUR_API_KEY"):
+
+    # API URL with city name and API key
+    url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={api_key}&units=metric"
+
+    try:
+
+        # Send GET request to API
+        response = requests.get(url, timeout=10)
+
+        # Check whether request was successful
+        response.raise_for_status()
+
+        # Convert API response into JSON
+        data = response.json()
+
+        records = []
+
+        # Extract required weather attributes
+        for entry in data["list"]:
+
+            records.append({
+                "timestamp": pd.to_datetime(entry["dt_txt"]),
+                "temperature_c": entry["main"]["temp"],
+                "humidity_pct": entry["main"]["humidity"],
+                "pressure_hpa": entry["main"]["pressure"],
+                "wind_speed_mps": entry["wind"]["speed"]
+            })
+
+        # Convert records into DataFrame
+        return pd.DataFrame(records)
+
+    except Exception as e:
+
+        # Generate simulated data if API is unavailable
+        print(f"Notice: Simulated data used ({e}).")
+
+        dates = pd.date_range(
+            start="2026-10-01 00:00",
+            periods=24,
+            freq="3h"
+        )
+
+        # Create sample weather dataset
+        return pd.DataFrame({
+            "timestamp": dates,
+
+            "temperature_c": np.round(
+                24.0 + 6.0 * np.sin(np.linspace(0, 3*np.pi, 24)), 2
+            ),
+
+            "humidity_pct": np.round(
+                65.0 - 15.0 * np.sin(np.linspace(0, 3*np.pi, 24)), 1
+            ),
+
+            "pressure_hpa": np.round(
+                1012.0 + np.random.normal(0, 1.2, 24), 1
+            ),
+
+            "wind_speed_mps": np.round(
+                np.random.uniform(2.0, 7.5, 24), 2
+            )
+        })
+
+
+# Retrieve and process weather data
+
+df_weather = fetch_weather_forecast(
+    city="Pune",
+    api_key="demo_key"
+)
+
+
+# Statistical Modeling and Summary
+
+print("=== WEATHER ATTRIBUTES DESCRIPTIVE SUMMARY ===")
+
+# Calculate count, mean, standard deviation, minimum and maximum
+print(
+    df_weather[
+        ["temperature_c", "humidity_pct", "pressure_hpa", "wind_speed_mps"]
+    ].describe()
+)
+
+
+# Calculate correlation between weather attributes
+
+print("\n--- Attribute Correlation Matrix ---")
+
+print(
+    df_weather[
+        ["temperature_c", "humidity_pct", "pressure_hpa"]
+    ].corr()
+)
+
+
+# Time-Series Visualization
+
+plt.figure(figsize=(10, 5))
+
+# Plot temperature
+plt.plot(
+    df_weather["timestamp"],
+    df_weather["temperature_c"],
+    marker="o",
+    color="crimson",
+    label="Temperature (°C)"
+)
+
+# Plot humidity
+plt.plot(
+    df_weather["timestamp"],
+    df_weather["humidity_pct"],
+    marker="s",
+    color="royalblue",
+    label="Humidity (%)"
+)
+
+# Add chart title
+plt.title(
+    "Weather Trends Over 72-Hour Period (OpenWeatherMap API)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+# Add axis labels
+plt.xlabel("Timestamp")
+plt.ylabel("Value")
+
+# Rotate timestamp labels
+plt.xticks(rotation=45)
+
+# Display grid
+plt.grid(True, linestyle="--", alpha=0.5)
+
+# Display legend
+plt.legend()
+
+# Adjust chart layout
+plt.tight_layout()
+
+# Save graph as image
+plt.savefig("weather_trends.png", dpi=200)
+
+# Display graph
+plt.show()
+Important Code Explanation
+Function / Concept	Explanation
+requests.get()	Sends a GET request to the API.
+raise_for_status()	Checks whether the HTTP request was successful.
+response.json()	Converts API response into JSON data.
+pd.DataFrame()	Creates a tabular dataset.
+pd.to_datetime()	Converts timestamp into datetime format.
+pd.date_range()	Generates a sequence of dates and times.
+np.round()	Rounds numerical values.
+np.sin()	Calculates sine values for simulated temperature and humidity.
+np.random.normal()	Generates normally distributed random values.
+np.random.uniform()	Generates random values within a specified range.
+.describe()	Calculates descriptive statistical measures.
+.corr()	Calculates correlation between numerical columns.
+plt.plot()	Creates a line graph.
+plt.legend()	Displays labels of plotted lines.
+plt.savefig()	Saves the graph as an image.
+plt.show()	Displays the graph.
+3. Expected Output
+A. Descriptive Statistical Summary
+=== WEATHER ATTRIBUTES DESCRIPTIVE SUMMARY ===
+
+       temperature_c  humidity_pct  pressure_hpa  wind_speed_mps
+
+count      24.000000     24.000000     24.000000       24.000000
+mean       25.129167     61.454167   1012.108333        4.821000
+std         2.000000      7.000000      1.000000        1.500000
+min        17.890000     47.900000   1009.900000        2.140000
+25%        22.462500     51.675000   1011.350000        3.450000
+50%        26.160000     60.800000   1012.400000        4.950000
+75%        28.750000     68.075000   1013.025000        6.120000
+max        30.420000     80.100000   1013.800000        7.420000
+B. Attribute Correlation Matrix
+--- Attribute Correlation Matrix ---
+
+               temperature_c  humidity_pct  pressure_hpa
+
+temperature_c       1.000000     -0.978241      0.154231
+humidity_pct       -0.978241      1.000000     -0.124512
+pressure_hpa        0.154231     -0.124512      1.000000
+These are illustrative values from your supplied assignment image. Actual API results and randomly generated fallback values will differ.
+C. Graphical Output
+Multiple traces on the same plot axes - Anvil Q&A - Anvil Community Forum
+anvil.works
+The program also saves the graph as:
+weather_trends.png
+
+
+
+
+4. SPPU Practical Viva Questions and Answers
+These questions are based on the oral questions in your manual (page 17) and the actual Python concepts used in Assignment 2.
+A. Basic API Questions
+Q1. What is OpenWeatherMap?
+Answer: OpenWeatherMap is an online platform that provides weather information through APIs, such as temperature, humidity, pressure and wind speed.
+Q2. What is a Web API?
+Answer: A Web API is an interface that allows two different software applications to communicate and exchange data over the internet.
+Q3. How do we interact with Web APIs?
+Answer: We interact with Web APIs by sending HTTP requests, receiving responses from the server and processing the returned data.
+Q4. What is an API key?
+Answer: An API key is a unique identification code used to authenticate requests made to an API.
+Q5. What is HTTP?
+Answer: HTTP stands for Hypertext Transfer Protocol. It is a communication protocol used to transfer data between clients and servers.
+B. Python and API Questions
+Q6. Which Python library is used to call APIs in this program?
+Answer: We use the requests library to send HTTP requests and receive responses from APIs.
+Q7. What is a GET request?
+Answer: A GET request is used to retrieve information from a server.
+Q8. What is JSON?
+Answer: JSON stands for JavaScript Object Notation. It is a lightweight data format used to exchange information between applications.
+Q9. What is the use of response.json()?
+Answer: It converts the API response into Python dictionary and list structures.
+Q10. What is the use of requests.get()?
+Answer: It sends a GET request to the specified API URL and retrieves the response.
+Q11. What is the use of timeout=10?
+Answer: It specifies that the request should wait up to 10 seconds before timing out.
+Q12. Why do we use try-except?
+Answer: It handles runtime errors and prevents the program from terminating unexpectedly.
+Q13. What is an API endpoint?
+Answer: An API endpoint is a specific URL through which an application accesses a particular API service.
+C. Data Analysis Questions
+Q14. What is Pandas?
+Answer: Pandas is a Python library used for data manipulation, cleaning and analysis.
+Q15. What is NumPy?
+Answer: NumPy is a Python library used for numerical calculations and working with arrays.
+Q16. What is Matplotlib?
+Answer: Matplotlib is a Python library used to create graphs and visualizations.
+Q17. What is descriptive statistics?
+Answer: Descriptive statistics is the process of summarizing data using measures such as mean, minimum, maximum and standard deviation.
+Q18. What is the use of describe()?
+Answer: It provides statistical information about numerical columns, including count, mean, standard deviation, minimum, maximum and quartiles.
+Q19. What is correlation?
+Answer: Correlation measures the relationship between two numerical variables.
+Q20. What is the use of .corr()?
+Answer: It calculates the correlation between numerical columns in a DataFrame.
+Q21. What is a time-series dataset?
+Answer: A time-series dataset contains data collected or recorded over different time intervals.
+Q22. Why do we use pd.to_datetime()?
+Answer: It converts date and time values into a proper datetime format for time-based analysis.
+D. Visualization Questions
+Q23. Why do we use a line chart?
+Answer: A line chart is used to show changes and trends in data over time.
+Q24. What is the use of plt.figure()?
+Answer: It creates a new figure for displaying a graph.
+Q25. What is the use of plt.xlabel() and plt.ylabel()?
+Answer: They are used to assign labels to the X-axis and Y-axis.
+Q26. What is the use of plt.legend()?
+Answer: It displays the labels of different plotted lines in a graph.
+Q27. What is the use of plt.savefig()?
+Answer: It saves the generated graph into an image file.
+E. Important Conceptual Questions
+Q28. What is humidity?
+Answer: Humidity is the amount of water vapour present in the air. It is generally measured as a percentage.
+Q29. What is atmospheric pressure?
+Answer: Atmospheric pressure is the force exerted by the weight of air on the Earth's surface. It is commonly measured in hPa.
+Q30. What is wind speed?
+Answer: Wind speed is the rate at which air moves. In this program, it is measured in metres per second.
+Q31. What is the difference between positive and negative correlation?
+Answer:
+•	Positive correlation: Both variables tend to increase or decrease together.
+•	Negative correlation: When one variable increases, the other tends to decrease.
+Q32. What does a correlation value of -0.97 indicate?
+Answer: It indicates a very strong negative relationship between two variables.
+Q33. Why is simulated data used in this program?
+Answer: Simulated data is used as a fallback when the API request fails or the internet connection is unavailable. It allows us to test the program without depending on the API.
+Q34. What is the difference between real-time data and forecast data?
+Answer:
+•	Real-time data represents current weather conditions.
+•	Forecast data represents predicted weather conditions for future time intervals.
+
+
+
+5. Practical Execution – Important Points
+Required libraries:
+pip install requests pandas numpy matplotlib
+API Key:
+In the program, replace:
+api_key="demo_key"
+with your actual OpenWeatherMap API key to retrieve real weather data.
+Otherwise, the program uses simulated weather data through its except block.
+Files generated:
+weather_trends.png
+6. Quick Viva Revision
+Remember these 8 important concepts before your practical:
+1.	API – Communication between applications.
+2.	API Key – Authentication of API requests.
+3.	GET Request – Retrieves data from a server.
+4.	JSON – Data exchange format.
+5.	Pandas – Data manipulation.
+6.	NumPy – Numerical calculations.
+7.	Matplotlib – Data visualization.
+8.	Correlation – Measures relationships between variables.
+Assignment 2 completed
+Next: Assignment 3 – Data Cleaning and Preparation: Analyzing Customer Churn in a Telecommunications Company.
+I'll continue using the same three-part code and viva format, following your uploaded DMV Lab Manual. 
+DMV Lab Manual.pdf
+

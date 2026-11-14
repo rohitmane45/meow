@@ -1,0 +1,496 @@
+Assignment 5 – Air Quality Data Analysis and Visualization
+Assignment Number: 05 | Dataset: City_Air_Quality.csv
+
+Problem Statement: To analyze city air quality data by calculating descriptive statistical measures and visualizing AQI trends, individual pollutant concentrations and pollutant distributions using Python libraries.
+
+Libraries Used:
+- Pandas – Data loading and analysis.
+- Matplotlib – Data visualization.
+- Seaborn – Statistical visualization.
+===========================================================================================
+1. Python Code – Without Comments
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+# 1. Load Air Quality Dataset
+
+df_aqi = pd.read_csv("City_Air_Quality.csv")
+
+df_aqi["Date"] = pd.to_datetime(df_aqi["Date"])
+
+
+print("=== AIR QUALITY STATISTICAL SUMMARY ===")
+
+print(
+    df_aqi[
+        ["AQI", "PM2.5", "PM10", "NO2", "SO2"]
+    ].describe().round(2)
+)
+
+
+# 2. Multi-Panel Visualization
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 12))
+
+
+# Plot 1: Overall AQI Time-Series Trend
+
+axes[0].plot(
+    df_aqi["Date"],
+    df_aqi["AQI"],
+    color="darkorange",
+    linewidth=1.5,
+    label="Overall AQI"
+)
+
+axes[0].axhline(
+    y=100,
+    color="red",
+    linestyle="--",
+    alpha=0.7,
+    label="Moderate/Unhealthy Baseline (100)"
+)
+
+axes[0].set_title(
+    "Overall Air Quality Index (AQI) Trend Over Time",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[0].set_ylabel("AQI Value")
+axes[0].grid(True, linestyle="--", alpha=0.5)
+axes[0].legend(loc="upper right")
+
+
+# Plot 2: Individual Pollutant Concentrations
+
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["PM2.5"],
+    color="crimson",
+    label="PM2.5",
+    alpha=0.8
+)
+
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["PM10"],
+    color="teal",
+    label="PM10",
+    alpha=0.7
+)
+
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["NO2"],
+    color="purple",
+    label="NO2",
+    alpha=0.7
+)
+
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["SO2"],
+    color="green",
+    label="SO2",
+    alpha=0.7
+)
+
+axes[1].set_title(
+    "Individual Pollutant Concentrations (µg/m³)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[1].set_ylabel("Concentration")
+axes[1].grid(True, linestyle="--", alpha=0.5)
+axes[1].legend(loc="upper right")
+
+
+# Plot 3: Distribution Boxplots
+
+sns.boxplot(
+    data=df_aqi[["PM2.5", "PM10", "NO2", "SO2"]],
+    ax=axes[2],
+    palette="Set2"
+)
+
+axes[2].set_title(
+    "Distribution of Specific Pollutants",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[2].set_ylabel("Concentration (µg/m³)")
+axes[2].grid(True, linestyle="--", alpha=0.5)
+
+
+plt.tight_layout()
+
+plt.savefig("city_air_quality_visualization.png", dpi=200)
+
+plt.show()
+
+
+2. Python Code – With Comments and Explanation
+# Import required libraries
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+# 1. Load Air Quality Dataset
+
+# Read air quality data from CSV file
+df_aqi = pd.read_csv("City_Air_Quality.csv")
+
+# Convert Date column into datetime format
+df_aqi["Date"] = pd.to_datetime(df_aqi["Date"])
+
+
+# Display statistical summary
+
+print("=== AIR QUALITY STATISTICAL SUMMARY ===")
+
+# Calculate descriptive statistics for selected columns
+# round(2) displays values up to two decimal places
+print(
+    df_aqi[
+        ["AQI", "PM2.5", "PM10", "NO2", "SO2"]
+    ].describe().round(2)
+)
+
+
+# 2. Multi-Panel Visualization
+
+# Create three graphs arranged vertically
+fig, axes = plt.subplots(3, 1, figsize=(12, 12))
+
+
+# Plot 1: Overall AQI Time-Series Trend
+
+# Plot AQI values against dates
+axes[0].plot(
+    df_aqi["Date"],
+    df_aqi["AQI"],
+    color="darkorange",
+    linewidth=1.5,
+    label="Overall AQI"
+)
+
+# Add horizontal reference line at AQI 100
+axes[0].axhline(
+    y=100,
+    color="red",
+    linestyle="--",
+    alpha=0.7,
+    label="Moderate/Unhealthy Baseline (100)"
+)
+
+# Set graph title
+axes[0].set_title(
+    "Overall Air Quality Index (AQI) Trend Over Time",
+    fontsize=12,
+    fontweight="bold"
+)
+
+# Set Y-axis label
+axes[0].set_ylabel("AQI Value")
+
+# Display grid
+axes[0].grid(True, linestyle="--", alpha=0.5)
+
+# Display legend
+axes[0].legend(loc="upper right")
+
+
+# Plot 2: Individual Pollutant Concentrations
+
+# Plot PM2.5 concentration
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["PM2.5"],
+    color="crimson",
+    label="PM2.5",
+    alpha=0.8
+)
+
+# Plot PM10 concentration
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["PM10"],
+    color="teal",
+    label="PM10",
+    alpha=0.7
+)
+
+# Plot NO2 concentration
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["NO2"],
+    color="purple",
+    label="NO2",
+    alpha=0.7
+)
+
+# Plot SO2 concentration
+axes[1].plot(
+    df_aqi["Date"],
+    df_aqi["SO2"],
+    color="green",
+    label="SO2",
+    alpha=0.7
+)
+
+# Set graph title
+axes[1].set_title(
+    "Individual Pollutant Concentrations (µg/m³)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+# Set Y-axis label
+axes[1].set_ylabel("Concentration")
+
+# Display grid and legend
+axes[1].grid(True, linestyle="--", alpha=0.5)
+axes[1].legend(loc="upper right")
+
+
+# Plot 3: Distribution Boxplots
+
+# Create boxplots for different pollutants
+sns.boxplot(
+    data=df_aqi[["PM2.5", "PM10", "NO2", "SO2"]],
+    ax=axes[2],
+    palette="Set2"
+)
+
+# Set graph title
+axes[2].set_title(
+    "Distribution of Specific Pollutants",
+    fontsize=12,
+    fontweight="bold"
+)
+
+# Set Y-axis label
+axes[2].set_ylabel("Concentration (µg/m³)")
+
+# Display grid
+axes[2].grid(True, linestyle="--", alpha=0.5)
+
+
+# Adjust spacing between graphs
+plt.tight_layout()
+
+# Save visualization as PNG image
+plt.savefig("city_air_quality_visualization.png", dpi=200)
+
+# Display all three graphs
+plt.show()
+
+========================================================================================
+
+Important Code Explanation
+Function / Concept	Explanation
+pd.read_csv()	Loads the CSV dataset.
+pd.to_datetime()	Converts date values into datetime format.
+describe()	Calculates descriptive statistics.
+round(2)	Rounds values to two decimal places.
+plt.subplots()	Creates multiple graphs in one figure.
+axes[0].plot()	Creates the AQI time-series graph.
+axhline()	Draws a horizontal reference line.
+set_title()	Sets the graph title.
+set_ylabel()	Sets the Y-axis label.
+grid()	Displays grid lines.
+legend()	Displays graph labels.
+sns.boxplot()	Creates boxplots for pollutant distributions.
+tight_layout()	Adjusts graph spacing.
+savefig()	Saves the graph as an image.
+show()	Displays the graph.
+
+
+3. Expected Output
+A. Air Quality Statistical Summary
+=== AIR QUALITY STATISTICAL SUMMARY ===
+
+          AQI   PM2.5    PM10    NO2    SO2
+
+count  365.00  365.00  365.00  365.00  365.00
+mean   104.85   62.69  113.82   40.51   14.71
+std     46.72   30.81   47.99   11.91    4.89
+min      2.00   10.00   20.00   13.40    2.00
+25%     71.00   41.00   76.90   32.70   11.50
+50%    104.00   62.70  115.30   40.20   14.50
+75%    137.00   83.10  148.10   47.70   18.30
+max    241.00  148.50  257.10   77.40   27.90
+
+
+B. Graphical Output
+
+The program generates three graphs in one figure:
+1. Overall AQI Time-Series Trend.
+2. Individual Pollutant Concentrations.
+3. Distribution of Specific Pollutants (Boxplots).
+-================================================================================================
+
+The numerical output above is reproduced from your manual. The graph depends on the actual CSV dataset.
+
+4. SPPU Practical Viva Questions and Answers
+A. Basic Air Quality Questions
+Q1. What is Air Quality Index (AQI)?
+
+Answer: AQI is a numerical scale used to represent the quality of air. It indicates how clean or polluted the air is.
+
+Q2. What is the purpose of this assignment?
+
+Answer: The purpose is to analyze air quality data, calculate statistical summaries and visualize AQI trends and pollutant concentrations.
+
+Q3. What is air pollution?
+
+Answer: Air pollution is the presence of harmful substances such as gases, smoke and particles in the atmosphere.
+
+Q4. What are the major pollutants used in this assignment?
+
+Answer:
+- PM2.5
+- PM10
+- NO2
+- SO2
+Q5. What is PM2.5?
+
+Answer: PM2.5 refers to fine particulate matter having a diameter of 2.5 micrometres or less.
+
+Q6. What is PM10?
+
+Answer: PM10 refers to particulate matter having a diameter of 10 micrometres or less.
+
+Q7. What is NO2?
+
+Answer: NO2 stands for Nitrogen Dioxide. It is an air pollutant mainly produced by vehicle emissions and industrial activities.
+
+Q8. What is SO2?
+
+Answer: SO2 stands for Sulphur Dioxide. It is a harmful gas mainly produced by burning fossil fuels and industrial processes.
+B. Pandas and Statistical Questions
+Q9. What is Pandas?
+
+Answer: Pandas is a Python library used for data manipulation and analysis.
+
+Q10. What is the use of pd.read_csv()?
+
+Answer: It reads data from a CSV file and converts it into a DataFrame.
+
+Q11. Why do we use pd.to_datetime()?
+
+Answer: It converts date values into datetime format, which helps in time-based analysis.
+
+Q12. What is descriptive statistics?
+
+Answer: Descriptive statistics summarizes data using mean, standard deviation, minimum, maximum and quartiles.
+
+Q13. What is the use of describe()?
+
+Answer: It generates a statistical summary of numerical columns.
+
+Q14. What is mean?
+
+Answer: Mean is the average of all values in a dataset.
+
+Q15. What is median?
+
+Answer: Median is the middle value after arranging data in ascending or descending order.
+
+Q16. What is standard deviation?
+
+Answer: Standard deviation measures how much the data values are spread around the mean.
+
+Q17. What is the meaning of the 25%, 50% and 75% values in describe()?
+
+Answer:
+- 25% represents the first quartile.
+- 50% represents the median.
+- 75% represents the third quartile.
+C. Data Visualization Questions
+Q18. What is Data Visualization?
+
+Answer: Data Visualization is the graphical representation of data using charts, graphs and plots.
+
+Q19. Which libraries are used for visualization in this assignment?
+
+Answer: Matplotlib and Seaborn.
+
+Q20. What is Matplotlib?
+
+Answer: Matplotlib is a Python library used to create graphs such as line charts, bar charts and histograms.
+
+Q21. What is Seaborn?
+
+Answer: Seaborn is a Python visualization library built on Matplotlib. It is used to create statistical graphs.
+
+Q22. What is a time-series graph?
+
+Answer: A time-series graph represents data values over time to identify trends and patterns.
+
+Q23. Why is a line graph used for AQI?
+
+Answer: A line graph helps us understand how air quality changes over different dates.
+
+Q24. What is the use of plt.subplots()?
+
+Answer: It creates multiple plots inside a single figure.
+
+Q25. What does figsize=(12,12) represent?
+
+Answer: It specifies the width and height of the figure in inches.
+
+Q26. What is the use of axhline()?
+
+Answer: It draws a horizontal reference line on a graph.
+
+Q27. What is the use of legend()?
+
+Answer: It displays labels that identify different lines or data series in a graph.
+D. Boxplot and Advanced Questions
+Q28. What is a Boxplot?
+
+Answer: A Boxplot is a statistical graph used to represent the distribution of data, median, quartiles and potential outliers.
+
+Q29. Why do we use a boxplot in this assignment?
+
+Answer: We use boxplots to compare the distribution and spread of different air pollutants.
+
+Q30. What are the five-number summary values in a boxplot?
+
+Answer:
+1. Minimum
+2. First Quartile (Q1)
+3. Median (Q2)
+4. Third Quartile (Q3)
+5. Maximum
+Q31. What is an outlier in a boxplot?
+
+Answer: An outlier is a value that lies unusually far from the other observations and is generally displayed as an individual point.
+
+Q32. What is the difference between a line plot and a boxplot?
+
+Answer:
+Line Plot	Boxplot
+Shows trends over time.	Shows data distribution.
+Connects data points.	Displays quartiles and median.
+Useful for time-series analysis.	Useful for comparing distributions.
+
+Q33. What is the use of tight_layout()?
+
+Answer: It automatically adjusts the spacing between plots to prevent overlapping elements.
+
+Q34. What is the use of savefig()?
+
+Answer: It saves the generated graph into an image file.
+
+Q35. What does AQI = 100 represent in this program?
+
+Answer: It represents the horizontal reference baseline drawn in the graph for comparison with the AQI values.
