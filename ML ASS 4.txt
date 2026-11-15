@@ -1,0 +1,446 @@
+Assignment 4 – Iris Flower Clustering Using K-Means Algorithm
+Assignment 4 – SPPU Machine Learning Lab
+Title: Implementation of K-Means Clustering Algorithm on the Iris Dataset using the Elbow Method.
+
+Objective: To implement the K-Means clustering algorithm on the Iris dataset, determine the optimal number of clusters using the Elbow Method, and perform clustering.
+
+Algorithm: K-Means Clustering (Unsupervised Machine Learning)
+
+
+===================================================================================================================================
+1. Plain Code (Without Comments)
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.datasets import load_iris
+
+iris = load_iris()
+X = iris.data
+
+feature_names = ['SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm']
+
+df_iris = pd.DataFrame(X, columns=feature_names)
+
+print("Dataset Overview (First 5 Rows):")
+print(df_iris.head())
+
+wcss = []
+k_range = range(1, 11)
+
+for k in k_range:
+    kmeans = KMeans(
+        n_clusters=k,
+        init='k-means++',
+        max_iter=300,
+        n_init=10,
+        random_state=42
+    )
+
+    kmeans.fit(X)
+    wcss.append(kmeans.inertia_)
+
+plt.figure(figsize=(8, 4.5))
+plt.plot(k_range, wcss, marker='o', linestyle='-', color='b')
+
+plt.title('The Elbow Method for Optimal K (Iris Dataset)', fontsize=12, fontweight='bold')
+plt.xlabel('Number of Clusters (K)')
+plt.ylabel('WCSS (Inertia)')
+plt.xticks(k_range)
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.tight_layout()
+
+plt.savefig('iris_elbow_method.png', dpi=200)
+plt.show()
+
+optimal_k = 3
+
+kmeans_optimal = KMeans(
+    n_clusters=optimal_k,
+    init='k-means++',
+    max_iter=300,
+    n_init=10,
+    random_state=42
+)
+
+cluster_labels = kmeans_optimal.fit_predict(X)
+
+df_iris['Cluster'] = cluster_labels
+
+print("\n--- Elbow Method Inertia (WCSS) Values ---")
+
+for k, inertia in zip(k_range, wcss):
+    print(f"K = {k:2d} -> WCSS (Inertia) = {inertia:.2f}")
+
+print(f"\nOptimal Number of Clusters Determined: {optimal_k}")
+print(f"Cluster Distribution: {np.bincount(cluster_labels)}")
+
+==============================================================================================================================
+
+2. Code With Comments and Explanation
+# Import required libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.cluster import KMeans
+from sklearn.datasets import load_iris
+
+# Step 1: Load the Iris dataset
+iris = load_iris()
+
+# Store input features
+X = iris.data
+
+# Define feature names
+feature_names = [
+    'SepalLengthCm',
+    'SepalWidthCm',
+    'PetalLengthCm',
+    'PetalWidthCm'
+]
+
+# Create DataFrame
+df_iris = pd.DataFrame(X, columns=feature_names)
+
+# Display first five rows
+print("Dataset Overview (First 5 Rows):")
+print(df_iris.head())
+
+# Step 2: Determine optimal K using Elbow Method
+wcss = []
+
+# Test cluster values from 1 to 10
+k_range = range(1, 11)
+
+for k in k_range:
+
+    # Create K-Means model
+    kmeans = KMeans(
+        n_clusters=k,
+        init='k-means++',
+        max_iter=300,
+        n_init=10,
+        random_state=42
+    )
+
+    # Train the model
+    kmeans.fit(X)
+
+    # Store WCSS value
+    wcss.append(kmeans.inertia_)
+
+# Step 3: Plot the Elbow Curve
+plt.figure(figsize=(8, 4.5))
+
+plt.plot(
+    k_range,
+    wcss,
+    marker='o',
+    linestyle='-',
+    color='b'
+)
+
+# Add graph title and labels
+plt.title(
+    'The Elbow Method for Optimal K (Iris Dataset)',
+    fontsize=12,
+    fontweight='bold'
+)
+
+plt.xlabel('Number of Clusters (K)')
+plt.ylabel('WCSS (Inertia)')
+
+# Display K values on X-axis
+plt.xticks(k_range)
+
+# Display grid
+plt.grid(True, linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+
+# Save the Elbow graph
+plt.savefig('iris_elbow_method.png', dpi=200)
+
+# Display graph
+plt.show()
+
+# Step 4: Apply K-Means using optimal K = 3
+optimal_k = 3
+
+# Create final K-Means model
+kmeans_optimal = KMeans(
+    n_clusters=optimal_k,
+    init='k-means++',
+    max_iter=300,
+    n_init=10,
+    random_state=42
+)
+
+# Fit the model and predict cluster labels
+cluster_labels = kmeans_optimal.fit_predict(X)
+
+# Add cluster labels to DataFrame
+df_iris['Cluster'] = cluster_labels
+
+# Step 5: Display WCSS values
+print("\n--- Elbow Method Inertia (WCSS) Values ---")
+
+for k, inertia in zip(k_range, wcss):
+    print(f"K = {k:2d} -> WCSS (Inertia) = {inertia:.2f}")
+
+# Display optimal number of clusters
+print(f"\nOptimal Number of Clusters Determined: {optimal_k}")
+
+# Display number of samples in each cluster
+print(f"Cluster Distribution: {np.bincount(cluster_labels)}")
+
+========================================================================================================================================
+
+Important Code Explanation
+Statement	Explanation
+load_iris()	Loads the Iris flower dataset.
+iris.data	Extracts the input features.
+DataFrame()	Converts dataset into tabular format.
+KMeans()	Creates a K-Means clustering model.
+n_clusters=k	Specifies the number of clusters.
+init='k-means++'	Selects initial cluster centroids intelligently.
+max_iter=300	Maximum number of iterations.
+n_init=10	Runs K-Means 10 times with different centroid initializations.
+random_state=42	Ensures reproducible results.
+fit(X)	Trains the clustering model.
+inertia_	Returns the WCSS value.
+wcss.append()	Stores WCSS values for different K values.
+plt.plot()	Plots the Elbow graph.
+fit_predict()	Trains the model and returns cluster labels.
+np.bincount()	Counts samples in each cluster.
+plt.savefig()	Saves the graph as an image.
+
+Understanding the Elbow Method
+The Elbow Method is used to find the optimal number of clusters (K).
+- First, we calculate WCSS for different K values.
+- Then, we plot K against WCSS.
+- We identify the point where the decrease in WCSS starts becoming slower.
+- This point looks like an elbow and indicates a suitable K value.
+What is WCSS?
+
+WCSS stands for Within-Cluster Sum of Squares.
+
+It measures the sum of squared distances between data points and their respective cluster centroids.
+\[
+WCSS = \sum_{i=1}^{K}\sum_{x\in C_i}
+||x-\mu_i||^2
+\]
+
+Where:
+- K = Number of clusters.
+- \(C_i\) = Individual cluster.
+- \(x\) = Data point.
+- \(\mu_i\) = Cluster centroid.
+Important: Lower WCSS means data points are closer to their cluster centroids. However, WCSS generally decreases as K increases, so we use the Elbow Method rather than simply choosing the lowest value.
+
+
+===========================================================================================================================
+
+3. SPPU Practical Viva Questions and Answers
+A. Basic Clustering Concepts
+Q1. What is clustering?
+
+Clustering is an unsupervised machine learning technique used to group similar data points into clusters.
+
+Q2. What is K-Means clustering?
+
+K-Means is an unsupervised machine learning algorithm that divides data into K clusters based on similarity and distance from cluster centroids.
+
+Q3. Is K-Means supervised or unsupervised?
+
+K-Means is an unsupervised learning algorithm because it does not require labelled data.
+
+Q4. What is the main objective of K-Means?
+
+The main objective is to divide data into clusters such that data points within the same cluster are as similar as possible.
+
+Q5. What does K represent in K-Means?
+
+K represents the number of clusters we want to create.
+
+Q6. What is a centroid?
+
+A centroid is the center point of a cluster. It is calculated as the mean of all data points belonging to that cluster.
+
+Q7. What is the difference between classification and clustering?
+Classification	Clustering
+Supervised learning	Unsupervised learning
+Uses labelled data	Uses unlabelled data
+Predicts predefined classes	Discovers groups in data
+Example: Spam detection	Example: Customer segmentation
+
+Q8. What are the main steps of K-Means?
+1. Select the number of clusters K.
+2. Initialize K centroids.
+3. Assign each data point to its nearest centroid.
+4. Recalculate centroids.
+5. Repeat until centroids stop changing significantly.
+Q9. What is Euclidean distance?
+
+Euclidean distance is the straight-line distance between two points.
+\[
+d(x,y)=\sqrt{\sum_{i=1}^{n}(x_i-y_i)^2}
+\]
+
+Q10. What are the applications of K-Means?
+1. Customer segmentation.
+2. Image segmentation.
+3. Document clustering.
+4. Market analysis.
+5. Pattern recognition.
+B. Elbow Method and WCSS
+Q11. What is the Elbow Method?
+
+The Elbow Method is a technique used to determine the optimal number of clusters in K-Means by plotting WCSS against different K values.
+
+Q12. Why do we use the Elbow Method?
+
+We use it to find a suitable number of clusters without selecting K randomly.
+
+Q13. What is WCSS?
+
+WCSS stands for Within-Cluster Sum of Squares. It measures the sum of squared distances between data points and their cluster centroids.
+
+Q14. What happens to WCSS when K increases?
+
+WCSS generally decreases as the number of clusters increases because data points become closer to their respective centroids.
+
+Q15. Why is it called the Elbow Method?
+
+It is called the Elbow Method because the graph looks like a human elbow at the point where the reduction in WCSS starts slowing down.
+
+Q16. What is the optimal K in this practical?
+
+The optimal K is 3.
+
+Q17. What is the difference between WCSS and centroid?
+- WCSS measures the total squared distance within clusters.
+- Centroid represents the center of a cluster.
+C. K-Means Parameters
+Q18. What is n_clusters?
+
+It specifies the number of clusters to be created.
+
+Q19. What is init='k-means++'?
+
+It is an initialization technique that selects initial centroids in a way that generally improves clustering.
+
+Q20. What is max_iter=300?
+
+It specifies the maximum number of iterations allowed for one K-Means run.
+
+Q21. What is n_init=10?
+
+It means the K-Means algorithm runs 10 times with different centroid initializations and selects the best result based on inertia.
+
+Q22. What is random_state=42?
+
+It ensures reproducible results by fixing the random initialization.
+
+Q23. What is the use of fit_predict()?
+
+It trains the K-Means model and returns the cluster label assigned to each data point.
+
+Q24. What is the difference between fit() and fit_predict()?
+- fit() trains the model.
+- fit_predict() trains the model and returns cluster assignments.
+D. Dataset-Based Questions
+Q25. Which dataset is used in this practical?
+
+The Iris flower dataset.
+
+Q26. How many samples are present in the Iris dataset?
+
+There are 150 samples.
+
+Q27. How many features are present in the Iris dataset?
+
+There are 4 features:
+1. Sepal Length
+2. Sepal Width
+3. Petal Length
+4. Petal Width
+Q28. What is the optimal number of clusters in the Iris dataset?
+
+Three clusters are selected in this practical.
+
+Q29. What are the three Iris flower species?
+1. Setosa
+2. Versicolor
+3. Virginica
+Q30. Does K-Means use actual species labels in this practical?
+
+No. The practical uses only the four input features. K-Means discovers clusters without using actual species labels.
+E. Advantages and Limitations
+Q31. What are the advantages of K-Means?
+1. Simple and easy to implement.
+2. Fast for large datasets.
+3. Easy to understand.
+4. Works well with well-separated clusters.
+Q32. What are the disadvantages of K-Means?
+1. K must be selected in advance.
+2. Sensitive to initial centroids.
+3. Sensitive to outliers.
+4. Does not perform well with irregularly shaped clusters.
+Q33. Is K-Means sensitive to outliers?
+
+Yes. Outliers can affect the calculation of centroids and reduce clustering quality.
+
+Q34. Why is feature scaling important in K-Means?
+
+Feature scaling prevents features with larger numerical ranges from dominating distance calculations.
+
+Q35. What is the difference between K-Means and KNN?
+K-Means	KNN
+Unsupervised algorithm	Supervised algorithm
+Used for clustering	Used for classification and regression
+Uses centroids	Uses nearest data points
+Does not require labelled data	Requires labelled training data
+
+Q36. What is the final output of this practical?
+
+The optimal number of clusters is 3, and the cluster distribution is [62, 50, 38].
+
+
+4. Output
+As provided in the manual
+Dataset Overview (First 5 Rows):
+
+   SepalLengthCm  SepalWidthCm  PetalLengthCm  PetalWidthCm
+
+0       5.1           3.5           1.4           0.2
+1       4.9           3.0           1.4           0.2
+2       4.7           3.2           1.3           0.2
+3       4.6           3.1           1.5           0.2
+4       5.0           3.6           1.4           0.2
+
+
+--- Elbow Method Inertia (WCSS) Values ---
+
+K =  1 -> WCSS (Inertia) = 681.37
+K =  2 -> WCSS (Inertia) = 152.35
+K =  3 -> WCSS (Inertia) = 78.85
+K =  4 -> WCSS (Inertia) = 57.23
+K =  5 -> WCSS (Inertia) = 46.46
+K =  6 -> WCSS (Inertia) = 39.04
+K =  7 -> WCSS (Inertia) = 34.31
+K =  8 -> WCSS (Inertia) = 30.13
+K =  9 -> WCSS (Inertia) = 28.29
+K = 10 -> WCSS (Inertia) = 25.97
+
+Optimal Number of Clusters Determined: 3
+
+Cluster Distribution: [62 50 38]
+
+5. Practical Conclusion
+Successfully implemented the K-Means clustering algorithm on the Iris dataset. Used the Elbow Method to determine the optimal number of clusters and calculated WCSS values for different K values.
+
+The optimal number of clusters was found to be 3, with cluster distribution [62, 50, 38].

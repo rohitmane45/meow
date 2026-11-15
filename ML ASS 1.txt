@@ -1,0 +1,290 @@
+Assignment 1 – PCA Algorithm for Dimensionality Reduction
+Title: To use PCA Algorithm for dimensionality reduction on wine dataset and visualize data after applying PCA.
+
+=======================================================================================================================================
+1. Plain Code (Without Comments)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.datasets import load_wine
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+wine = load_wine()
+X = wine.data
+y = wine.target
+feature_names = wine.feature_names
+target_names = wine.target_names
+
+print(f"Original shape: {X.shape} (178 samples, 13 features)")
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+print(f"Transformed shape: {X_pca.shape} (178 samples, 2 components)")
+
+print("Explained Variance Ratio:")
+print(f"PC1: {pca.explained_variance_ratio_[0]:.4f}")
+print(f"({pca.explained_variance_ratio_[0]*100:.2f}%)")
+print(f"PC2: {pca.explained_variance_ratio_[1]:.4f}")
+print(f"({pca.explained_variance_ratio_[1]*100:.2f}%)")
+print(f"Total variance retained: {np.sum(pca.explained_variance_ratio_)*100:.2f}%\n")
+
+df_pca = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
+df_pca['Target'] = [target_names[i] for i in y]
+
+print("First 5 rows after PCA:")
+print(df_pca.head())
+
+plt.figure(figsize=(9, 6))
+
+sns.scatterplot(
+    x='PC1',
+    y='PC2',
+    hue='Target',
+    palette=['#1f77b4', '#ff7f0e', '#2ca02c'],
+    data=df_pca,
+    s=75,
+    alpha=0.85,
+    edgecolor='k'
+)
+
+plt.title('PCA of Wine Dataset (2 Components)', fontsize=14, fontweight='bold')
+plt.xlabel(f'Principal Component 1 ({pca.explained_variance_ratio_[0]*100:.2f}% Variance)', fontsize=12)
+plt.ylabel(f'Principal Component 2 ({pca.explained_variance_ratio_[1]*100:.2f}% Variance)', fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.legend(title='Wine Class', loc='upper right')
+plt.tight_layout()
+plt.show()
+
+=======================================================================================================================================
+
+2. Code With Comments and Explanation
+# Import required libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.datasets import load_wine
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Step 1: Load the Wine dataset
+wine = load_wine()
+
+X = wine.data
+y = wine.target
+
+feature_names = wine.feature_names
+target_names = wine.target_names
+
+# Display original dataset shape
+print(f"Original shape: {X.shape} (178 samples, 13 features)")
+
+# Step 2: Standardize the features
+# StandardScaler converts features to mean 0 and variance 1
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Step 3: Apply PCA
+# Reduce 13 dimensions into 2 principal components
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+# Display transformed dataset shape
+print(f"Transformed shape: {X_pca.shape} (178 samples, 2 components)")
+
+# Step 4: Display explained variance ratio
+# It tells how much information is retained by each component
+print("Explained Variance Ratio:")
+
+print(f"PC1: {pca.explained_variance_ratio_[0]:.4f}")
+print(f"({pca.explained_variance_ratio_[0]*100:.2f}%)")
+
+print(f"PC2: {pca.explained_variance_ratio_[1]:.4f}")
+print(f"({pca.explained_variance_ratio_[1]*100:.2f}%)")
+
+print(f"Total variance retained: {np.sum(pca.explained_variance_ratio_)*100:.2f}%\n")
+
+# Step 5: Create DataFrame for visualization
+df_pca = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
+
+# Add target class names
+df_pca['Target'] = [target_names[i] for i in y]
+
+# Display first five rows
+print("First 5 rows after PCA:")
+print(df_pca.head())
+
+# Step 6: Visualize the PCA transformed data
+plt.figure(figsize=(9, 6))
+
+sns.scatterplot(
+    x='PC1',
+    y='PC2',
+    hue='Target',
+    palette=['#1f77b4', '#ff7f0e', '#2ca02c'],
+    data=df_pca,
+    s=75,
+    alpha=0.85,
+    edgecolor='k'
+)
+
+# Add title and axis labels
+plt.title('PCA of Wine Dataset (2 Components)', fontsize=14, fontweight='bold')
+
+plt.xlabel(
+    f'Principal Component 1 ({pca.explained_variance_ratio_[0]*100:.2f}% Variance)',
+    fontsize=12
+)
+
+plt.ylabel(
+    f'Principal Component 2 ({pca.explained_variance_ratio_[1]*100:.2f}% Variance)',
+    fontsize=12
+)
+
+# Display grid and legend
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.legend(title='Wine Class', loc='upper right')
+
+plt.tight_layout()
+
+# Display final graph
+plt.show()
+=====================================================================================================================================
+
+Explanation of Important Statements
+Statement	Explanation
+load_wine()	Loads the built-in Wine dataset.
+wine.data	Contains 178 samples and 13 features.
+wine.target	Contains wine class labels.
+StandardScaler()	Standardizes the dataset.
+fit_transform()	Learns scaling parameters and transforms data.
+PCA(n_components=2)	Reduces 13 features into 2 components.
+explained_variance_ratio_	Shows the information retained by each component.
+DataFrame()	Creates a tabular structure using Pandas.
+sns.scatterplot()	Displays the PCA results graphically.
+plt.show()	Displays the graph.
+
+=======================================================================================================================================
+
+3. Viva Questions and Answers (SPPU)
+These questions cover the concepts used in the practical and the oral questions provided in your manual.
+
+Q1. What is PCA?
+
+PCA stands for Principal Component Analysis. It is an unsupervised machine learning technique used to reduce the dimensionality of data while retaining maximum information.
+
+Q2. Why do we use PCA?
+
+PCA is used for:
+1. Dimensionality reduction.
+2. Improving model performance.
+3. Visualizing high-dimensional data.
+4. Removing redundant information.
+5. Creating independent features.
+Q3. Is PCA supervised or unsupervised?
+
+PCA is an unsupervised learning algorithm because it does not require target labels to find principal components.
+
+Q4. What is dimensionality reduction?
+
+Dimensionality reduction is the process of reducing the number of features in a dataset while preserving important information.
+
+Q5. What are principal components?
+
+Principal components are new variables created by combining the original features. They capture the maximum possible variance in the data.
+
+Q6. Why do we use StandardScaler before PCA?
+
+We use StandardScaler to bring all features to a common scale. Otherwise, features with larger numerical values may dominate PCA.
+
+Q7. What is StandardScaler?
+
+StandardScaler is a preprocessing technique that transforms data so that its mean becomes 0 and standard deviation becomes 1.
+
+Q8. What is explained variance ratio?
+
+It represents the proportion of total information (variance) retained by each principal component.
+
+Q9. What is the difference between PC1 and PC2?
+- PC1 captures the maximum variance in the dataset.
+- PC2 captures the next highest variance and is perpendicular to PC1.
+Q10. What is the use of n_components=2?
+
+It reduces the original dataset to two principal components, making it easier to visualize using a 2D graph.
+
+Q11. What is the Wine dataset?
+
+The Wine dataset is a built-in dataset in Scikit-learn. It contains 178 samples, 13 features and 3 wine classes.
+
+Q12. Which libraries are used in this practical?
+- NumPy – Numerical operations.
+- Pandas – Data manipulation.
+- Matplotlib – Data visualization.
+- Seaborn – Statistical visualization.
+- Scikit-learn – Machine learning operations.
+Q13. What is the covariance matrix?
+
+A covariance matrix represents the relationship between different features in a dataset. PCA uses it to identify directions of maximum variance.
+
+Q14. What are eigenvalues and eigenvectors in PCA?
+- Eigenvectors represent the directions of principal components.
+- Eigenvalues represent the amount of variance in those directions.
+Q15. Does PCA remove the original features?
+
+PCA transforms the original features into new principal components. It does not simply delete selected original columns.
+
+Q16. What is the difference between PCA and LDA?
+PCA	LDA
+Unsupervised technique	Supervised technique
+Does not use class labels	Uses class labels
+Maximizes variance	Maximizes class separation
+Used for dimensionality reduction	Used for dimensionality reduction and classification
+
+Q17. What is the use of fit_transform()?
+
+It first learns the required parameters from the data and then transforms the data.
+
+Q18. Why do we use a scatter plot?
+
+A scatter plot helps visualize the relationship and distribution of data points across two principal components.
+
+Q19. What is the output of this practical?
+
+The output is a reduced dataset containing two principal components and a scatter plot showing the three wine classes.
+
+Q20. Can PCA be applied to a dataset containing 100 features?
+
+Yes. PCA can reduce 100 features into a smaller number of principal components while retaining as much variance as possible.
+
+4. Expected Output
+Expected output from the supplied code
+Original shape: (178, 13)
+
+Transformed shape: (178, 2)
+
+Explained Variance Ratio:
+PC1: 0.36199
+PC2: 0.19207
+
+Total variance retained: 55.41%
+
+First 5 rows after PCA:
+        PC1       PC2    Target
+0    3.3167   1.4435   class_0
+1    2.2095   0.3334   class_0
+2    2.5167  -1.0312   class_0
+3    3.7571  -2.7564   class_0
+4    1.0090  -0.8698   class_0
+
+
+Note: Minor numerical differences may occur depending on the displayed precision.
+
+Practical conclusion: Successfully implemented PCA on the Wine dataset, reduced 13 features to 2 principal components, and visualized the transformed data.
