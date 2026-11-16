@@ -1,0 +1,437 @@
+IR ASSIGNMENT 6 – PAGE RANK ALGORITHM USING HYPERLINK GRAPH
+
+1. PLAIN CODE (WITHOUT COMMENTS)
+from bs4 import BeautifulSoup
+import numpy as np
+
+html_documents = {
+    "pageA.html": "<html><body><a href='pageB.html'>B</a> <a href='pageC.html'>C</a></body></html>",
+    "pageB.html": "<html><body><a href='pageC.html'>C</a></body></html>",
+    "pageC.html": "<html><body><a href='pageA.html'>A</a></body></html>",
+    "pageD.html": "<html><body><a href='pageC.html'>C</a></body></html>"
+}
+
+web_graph = {}
+
+for page, html_content in html_documents.items():
+    soup = BeautifulSoup(html_content, "html.parser")
+    links = [a["href"] for a in soup.find_all("a", href=True)]
+    web_graph[page] = links
+
+print("=== ASSIGNMENT 6: EXTRACTED HYPERLINK GRAPH ===")
+
+for page, out_links in web_graph.items():
+    print(f"Node '{page}' points to -> {out_links}")
+
+
+def compute_pagerank(graph, d=0.85, max_iter=100, tol=1e-6):
+    nodes = sorted(list(graph.keys()))
+    N = len(nodes)
+    node_to_idx = {node: i for i, node in enumerate(nodes)}
+
+    M = np.zeros((N, N))
+
+    for src, targets in graph.items():
+        src_idx = node_to_idx[src]
+
+        if len(targets) > 0:
+            for tgt in targets:
+                if tgt in node_to_idx:
+                    tgt_idx = node_to_idx[tgt]
+                    M[tgt_idx, src_idx] = 1.0 / len(targets)
+        else:
+            M[:, src_idx] = 1.0 / N
+
+    r = np.ones(N) / N
+    teleport = np.ones(N) / N
+
+    for iteration in range(max_iter):
+        r_next = d * np.dot(M, r) + (1.0 - d) * teleport
+
+        if np.linalg.norm(r_next - r, 1) < tol:
+            print(f"\nPower Iteration converged in {iteration + 1} iterations.")
+            r = r_next
+            break
+
+        r = r_next
+
+    return {nodes[i]: float(r[i]) for i in range(N)}
+
+
+ranks = compute_pagerank(web_graph, d=0.85)
+
+print("\n=== FINAL PAGERANK COMPUTATION RESULTS ===")
+
+for rank_pos, (page, score) in enumerate(sorted(ranks.items(), key=lambda x: x[1], reverse=True), 1):
+    print(f"Rank {rank_pos}: {page:<12} | Score = {score:.5f} ({score * 100:.2f}%)")
+________________________________________
+2. CODE WITH COMMENTS
+# Import required libraries
+from bs4 import BeautifulSoup
+import numpy as np
+
+# 1. Define sample web pages with raw HTML hyperlinks
+html_documents = {
+    "pageA.html": "<html><body><a href='pageB.html'>B</a> <a href='pageC.html'>C</a></body></html>",
+    "pageB.html": "<html><body><a href='pageC.html'>C</a></body></html>",
+    "pageC.html": "<html><body><a href='pageA.html'>A</a></body></html>",
+    "pageD.html": "<html><body><a href='pageC.html'>C</a></body></html>"
+}
+
+# 2. Extract hyperlinks from each HTML page
+web_graph = {}
+
+for page, html_content in html_documents.items():
+
+    # Parse the HTML content
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Find all anchor tags having href attributes
+    links = [a["href"] for a in soup.find_all("a", href=True)]
+
+    # Store extracted links in the web graph
+    web_graph[page] = links
+
+# Display the extracted hyperlink graph
+print("=== ASSIGNMENT 6: EXTRACTED HYPERLINK GRAPH ===")
+
+for page, out_links in web_graph.items():
+    print(f"Node '{page}' points to -> {out_links}")
+
+
+# 3. Define the PageRank calculation function
+def compute_pagerank(graph, d=0.85, max_iter=100, tol=1e-6):
+
+    # Get sorted list of all web pages
+    nodes = sorted(list(graph.keys()))
+
+    # Count total number of pages
+    N = len(nodes)
+
+    # Map each page to its matrix index
+    node_to_idx = {node: i for i, node in enumerate(nodes)}
+
+    # Create the transition probability matrix
+    M = np.zeros((N, N))
+
+    # Fill the transition matrix
+    for src, targets in graph.items():
+
+        src_idx = node_to_idx[src]
+
+        if len(targets) > 0:
+
+            # Distribute probability equally among outgoing links
+            for tgt in targets:
+
+                if tgt in node_to_idx:
+                    tgt_idx = node_to_idx[tgt]
+                    M[tgt_idx, src_idx] = 1.0 / len(targets)
+
+        else:
+
+            # Handle pages having no outgoing links
+            M[:, src_idx] = 1.0 / N
+
+    # Initialize PageRank scores equally
+    r = np.ones(N) / N
+
+    # Create the teleportation probability vector
+    teleport = np.ones(N) / N
+
+    # Perform Power Iteration
+    for iteration in range(max_iter):
+
+        # Calculate the updated PageRank scores
+        r_next = d * np.dot(M, r) + (1.0 - d) * teleport
+
+        # Check whether the algorithm has converged
+        if np.linalg.norm(r_next - r, 1) < tol:
+
+            print(f"\nPower Iteration converged in {iteration + 1} iterations.")
+
+            r = r_next
+            break
+
+        # Update the PageRank vector
+        r = r_next
+
+    # Return PageRank scores in dictionary format
+    return {nodes[i]: float(r[i]) for i in range(N)}
+
+
+# 4. Calculate PageRank scores
+ranks = compute_pagerank(web_graph, d=0.85)
+
+# Display final PageRank results
+print("\n=== FINAL PAGERANK COMPUTATION RESULTS ===")
+
+# Sort pages according to PageRank scores in descending order
+for rank_pos, (page, score) in enumerate(
+    sorted(ranks.items(), key=lambda x: x[1], reverse=True), 1
+):
+
+    # Display rank, page name, and score
+    print(f"Rank {rank_pos}: {page:<12} | Score = {score:.5f} ({score * 100:.2f}%)")
+________________________________________
+3. STEP-BY-STEP CODE EXPLANATION
+Step 1: Import Libraries
+from bs4 import BeautifulSoup
+import numpy as np
+•	BeautifulSoup: Used to extract hyperlinks from HTML pages.
+•	NumPy: Used for matrix creation and mathematical calculations.
+Step 2: Define Sample HTML Pages
+html_documents = {
+    "pageA.html": "<html><body><a href='pageB.html'>B</a> <a href='pageC.html'>C</a></body></html>",
+    "pageB.html": "<html><body><a href='pageC.html'>C</a></body></html>",
+    "pageC.html": "<html><body><a href='pageA.html'>A</a></body></html>",
+    "pageD.html": "<html><body><a href='pageC.html'>C</a></body></html>"
+}
+Here, we create four sample web pages.
+Each page contains hyperlinks pointing to other pages.
+For example:
+•	Page A links to Page B and Page C.
+•	Page B links to Page C.
+•	Page C links to Page A.
+•	Page D links to Page C.
+Step 3: Extract Hyperlinks
+web_graph = {}
+
+for page, html_content in html_documents.items():
+    soup = BeautifulSoup(html_content, "html.parser")
+    links = [a["href"] for a in soup.find_all("a", href=True)]
+    web_graph[page] = links
+Explanation:
+•	web_graph = {} creates an empty dictionary.
+•	html_documents.items() accesses each page and its HTML content.
+•	BeautifulSoup() parses the HTML.
+•	find_all("a", href=True) finds all anchor tags containing an href attribute.
+•	a["href"] extracts the destination URL.
+•	web_graph[page] = links stores the extracted links.
+What is an anchor tag?
+An anchor tag is an HTML tag used to create hyperlinks.
+Example:
+<a href="pageB.html">B</a>
+Here, href contains the destination page.
+Step 4: Create the PageRank Function
+def compute_pagerank(graph, d=0.85, max_iter=100, tol=1e-6):
+This function calculates the PageRank score of each web page.
+Parameters:
+•	graph: Contains web pages and their outgoing links.
+•	d=0.85: Damping factor.
+•	max_iter=100: Maximum number of iterations.
+•	tol=1e-6: Convergence tolerance.
+Step 5: Identify Web Pages
+nodes = sorted(list(graph.keys()))
+N = len(nodes)
+node_to_idx = {node: i for i, node in enumerate(nodes)}
+•	nodes stores all page names in sorted order.
+•	N stores the total number of pages.
+•	node_to_idx assigns an index to each page.
+For example:
+Web Page	Index
+pageA.html	0
+pageB.html	1
+pageC.html	2
+pageD.html	3
+Step 6: Create Transition Probability Matrix
+M = np.zeros((N, N))
+This creates a 4 × 4 matrix filled with zeros.
+The transition matrix stores the probability of moving from one page to another through hyperlinks.
+The code uses:
+M[tgt_idx, src_idx] = 1.0 / len(targets)
+This means the probability is stored in the destination row and source column.
+For example, Page A has two outgoing links:
+•	Page A to Page B = 1/2 = 0.5
+•	Page A to Page C = 1/2 = 0.5
+Step 7: Handle Pages Without Outgoing Links
+if len(targets) > 0:
+    ...
+else:
+    M[:, src_idx] = 1.0 / N
+A page with no outgoing hyperlinks is called a dangling node.
+The code distributes its probability equally among all pages.
+This prevents PageRank probability from disappearing.
+Note: The given dataset has no dangling node because every page has at least one outgoing link. This part is included to make the function work for such cases too.
+Step 8: Initialize PageRank Scores
+r = np.ones(N) / N
+teleport = np.ones(N) / N
+Initially, every page receives an equal PageRank score.
+There are four pages, so each page starts with:
+[
+PR = \frac{1}{4} = 0.25
+]
+The teleport vector represents the equal probability of randomly jumping to any page.
+Step 9: Perform Power Iteration
+r_next = d * np.dot(M, r) + (1.0 - d) * teleport
+This is the main PageRank formula.
+[
+PR_{new} = d(M \times PR_{old}) + (1-d)T
+]
+Where:
+•	d = damping factor.
+•	M = transition probability matrix.
+•	PR_old = previous PageRank scores.
+•	T = teleportation probability vector.
+The algorithm repeatedly updates the scores until they become stable.
+Step 10: Check Convergence
+if np.linalg.norm(r_next - r, 1) < tol:
+This checks the difference between the old and new PageRank vectors.
+•	np.linalg.norm() calculates the vector norm.
+•	1 specifies the L1 norm.
+•	tol is the acceptable difference.
+If the difference is smaller than the tolerance, the algorithm is considered converged.
+Step 11: Return PageRank Scores
+return {nodes[i]: float(r[i]) for i in range(N)}
+This returns the final PageRank scores in dictionary format.
+Step 12: Sort and Display Results
+sorted(ranks.items(), key=lambda x: x[1], reverse=True)
+This sorts pages according to their PageRank scores.
+•	key=lambda x: x[1]: Sorts using the score.
+•	reverse=True: Sorts in descending order.
+The page with the highest score gets Rank 1.
+________________________________________
+4. SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+A. Basic Concepts
+Q1. What is PageRank?
+PageRank is an algorithm used to measure the importance of web pages based on the hyperlinks pointing to them.
+Q2. Who developed the PageRank algorithm?
+Larry Page and Sergey Brin developed the PageRank algorithm at Stanford University.
+Q3. What is the main purpose of PageRank?
+Its purpose is to calculate the importance or relative authority of web pages.
+Q4. Is PageRank a machine learning algorithm?
+PageRank is primarily a link-analysis algorithm based on graph theory and linear algebra, rather than a conventional machine learning algorithm.
+Q5. Where is PageRank used?
+It is used in web graph analysis, link analysis, and ranking applications.
+Q6. What is a web graph?
+A web graph is a representation of web pages as nodes and hyperlinks as directed edges.
+Q7. What is a node in this assignment?
+Each HTML page represents a node.
+Q8. What is an edge in this assignment?
+A hyperlink connecting one web page to another represents a directed edge.
+B. HTML and BeautifulSoup
+Q9. What is BeautifulSoup?
+BeautifulSoup is a Python library used to parse HTML and XML documents and extract information from them.
+Q10. Why is BeautifulSoup used in this assignment?
+It is used to extract hyperlinks from the sample HTML pages.
+Q11. What is HTML?
+HTML stands for HyperText Markup Language. It is used to structure web pages.
+Q12. What is an anchor tag?
+An anchor tag <a> is used to create hyperlinks in HTML.
+Q13. What is the purpose of the href attribute?
+The href attribute specifies the destination of a hyperlink.
+Q14. What does html.parser do?
+It is Python's built-in HTML parser, which BeautifulSoup uses to parse HTML content.
+Q15. What does find_all("a", href=True) do?
+It finds all anchor tags that contain an href attribute.
+Q16. What does a["href"] return?
+It returns the destination URL stored in the anchor tag's href attribute.
+C. PageRank Algorithm
+Q17. What is the basic idea behind PageRank?
+A page is considered important if important pages link to it.
+Q18. What is the damping factor?
+The damping factor represents the probability that a user follows a hyperlink instead of randomly jumping to another page.
+Q19. What is the damping factor used in this assignment?
+0.85.
+Q20. Why is the damping factor generally set to 0.85?
+It is a commonly used value that balances following hyperlinks with randomly jumping to another page.
+Q21. What is the teleportation probability?
+It is the probability that a user randomly jumps to any page instead of following a hyperlink.
+Q22. What is the value of teleportation probability in this assignment?
+Since the damping factor is 0.85:
+[
+1-d=1-0.85=0.15
+]
+Therefore, the teleportation probability is 0.15.
+Q23. What is Power Iteration?
+Power Iteration is an iterative numerical method used to calculate the PageRank vector by repeatedly updating the scores.
+Q24. Why do we initialize PageRank equally?
+Because initially, no page is assumed to be more important than another.
+Q25. What is a transition probability matrix?
+It is a matrix that represents the probability of moving from one page to another through hyperlinks.
+Q26. Why is NumPy used?
+NumPy is used for matrix operations, array creation, and numerical calculations.
+Q27. What does np.dot(M, r) do?
+It performs matrix-vector multiplication between the transition matrix and the current PageRank vector.
+Q28. What is convergence in PageRank?
+Convergence occurs when the PageRank scores stop changing significantly between iterations.
+Q29. What is tolerance?
+Tolerance is the small acceptable difference used to decide whether the algorithm has converged.
+Q30. What is the maximum number of iterations in this assignment?
+100 iterations.
+D. Graph and Matrix Concepts
+Q31. What is an in-link?
+An in-link is a hyperlink coming from another page to the current page.
+Q32. What is an out-link?
+An out-link is a hyperlink going from the current page to another page.
+Q33. Which page has the maximum number of outgoing links in this assignment?
+Page A has two outgoing links.
+Q34. Which page receives links from the most pages?
+Page C receives links from Page A, Page B, and Page D.
+Q35. What is a dangling node?
+A dangling node is a web page that has no outgoing hyperlinks.
+Q36. How does this program handle dangling nodes?
+It distributes the probability of the dangling node equally among all pages.
+Q37. Does this dataset contain a dangling node?
+No. All four pages have at least one outgoing hyperlink.
+Q38. Why is the transition matrix initialized with zeros?
+To create an empty matrix before filling it with hyperlink transition probabilities.
+E. Output and Practical Questions
+Q39. How many web pages are used in this assignment?
+Four web pages.
+Q40. Which page has the highest PageRank score in the given output?
+Page C has the highest score of 0.39415.
+Q41. Which page has the lowest PageRank score in the given output?
+Page D has the lowest score of 0.03750.
+Q42. Why does Page C have the highest PageRank score?
+Because it receives incoming links from Page A, Page B, and Page D.
+Q43. Why does Page D have a low PageRank score?
+No other page links to Page D in the given graph. Therefore, it receives only the teleportation contribution.
+Q44. What does a PageRank score of 0.39415 mean?
+It represents approximately 39.42% of the total PageRank probability in this four-page graph.
+Q45. What is the total of all PageRank scores?
+The scores approximately add up to 1, or 100%.
+Q46. How many iterations were required according to the given output?
+28 iterations.
+Q47. What does enumerate() do in the output section?
+It provides an index along with each item, allowing us to display the rank position.
+Q48. Why is reverse=True used?
+It sorts the PageRank scores from highest to lowest.
+Q49. Can two pages have the same PageRank score?
+Yes. Two pages can have equal scores if their link structures and contributions result in equal importance.
+Q50. What is the final objective of this assignment?
+To extract hyperlinks from HTML pages, construct a directed web graph, calculate PageRank scores using Power Iteration, and rank the pages according to their importance.
+________________________________________
+5. QUICK REVISION BEFORE PRACTICAL EXAM
+Concept	Answer
+Assignment	PageRank Algorithm
+Main purpose	Rank web pages
+Libraries	BeautifulSoup, NumPy
+HTML parser	html.parser
+Anchor tag	<a>
+Link attribute	href
+Graph type	Directed graph
+Number of pages	4
+Algorithm	Power Iteration
+Damping factor	0.85
+Teleportation probability	0.15
+Maximum iterations	100
+Tolerance	0.000001
+Convergence iterations	28 (given output)
+Highest-ranked page	pageC.html
+Highest score	0.39415
+Lowest-ranked page	pageD.html
+Lowest score	0.03750
+6. IMPORTANT POINTS TO REMEMBER
+1.	PageRank measures the importance of web pages.
+2.	Web pages are represented as nodes.
+3.	Hyperlinks are represented as directed edges.
+4.	BeautifulSoup extracts hyperlinks from HTML.
+5.	The damping factor is 0.85.
+6.	Power Iteration repeatedly updates PageRank scores.
+7.	A dangling node has no outgoing links.
+8.	The algorithm stops when the scores converge or the maximum iteration limit is reached.
+9.	Page C has the highest score in the supplied output.
+10.	The sum of PageRank scores is approximately 1.
+Most important viva questions: What is PageRank? What is a damping factor? What is a dangling node? What is Power Iteration? Why does Page C have the highest rank?
+

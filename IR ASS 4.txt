@@ -1,0 +1,533 @@
+IR ASSIGNMENT 4 – EMAIL SPAM FILTERING USING NAIVE BAYES CLASSIFIER
+Problem Statement: Implement an email spam filtering system using Machine Learning. Classify incoming email messages into Spam and Ham (Legitimate) categories using the Multinomial Naive Bayes algorithm.
+Objective:
+1.	Understand text classification.
+2.	Perform text feature extraction using TF-IDF.
+3.	Train a Naive Bayes classifier.
+4.	Evaluate the classification model using accuracy, precision, recall and F1-score.
+5.	Predict whether new incoming emails are Spam or Ham.
+________________________________________
+1. PLAIN CODE (WITHOUT COMMENTS)
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+dataset = [
+    ("Win a $1000 Walmart gift card! Click here now to claim your cash reward prize.", "spam"),
+    ("Urgent: Your account security has been compromised. Verify your password now.", "spam"),
+    ("Congratulations! You have been selected for a free lottery ticket worth 50,000.", "spam"),
+    ("Exclusive loan offer approved with 0% interest! Text YES to claim your funds.", "spam"),
+    ("Claim your free entry to win a brand new car today. Call this number now.", "spam"),
+    ("Free trial offer expiring soon! Click the link below to renew your access.", "spam"),
+    ("You have won a guaranteed cash prize! Reply WIN to 88202 to collect.", "spam"),
+    ("Double your income working from home. No experience needed, apply fast.", "spam"),
+    ("Hey, are we still meeting for lunch at 1 PM today?", "ham"),
+    ("Can you send me the updated project report and presentation deck?", "ham"),
+    ("The team meeting has been rescheduled to tomorrow at 10 AM.", "ham"),
+    ("Please review the attached invoice and let me know if any changes are needed.", "ham"),
+    ("Let's catch up over coffee this weekend if you are free.", "ham"),
+    ("Don't forget to submit the assignment before midnight today.", "ham"),
+    ("Thanks for your help with the machine learning assignment yesterday!", "ham"),
+    ("Hi, I just pushed the latest commit to the repository.", "ham")
+] * 20
+
+df = pd.DataFrame(dataset, columns=["text", "label"])
+
+df["label_num"] = df["label"].map({"ham": 0, "spam": 1})
+
+X_train, X_test, y_train, y_test = train_test_split(
+    df["text"], df["label_num"], test_size=0.25,
+    random_state=42, stratify=df["label_num"]
+)
+
+tfidf = TfidfVectorizer(stop_words="english", lowercase=True)
+
+X_train_vec = tfidf.fit_transform(X_train)
+X_test_vec = tfidf.transform(X_test)
+
+nb_model = MultinomialNB()
+nb_model.fit(X_train_vec, y_train)
+
+y_pred = nb_model.predict(X_test_vec)
+
+acc = accuracy_score(y_test, y_pred)
+
+print("=== ASSIGNMENT 4: SPAM FILTER CLASSIFIER ===")
+print(f"Overall Accuracy: {acc * 100:.2f}%\n")
+
+print("Classification Report:")
+print(classification_report(
+    y_test, y_pred,
+    target_names=["Ham (Legitimate)", "Spam"]
+))
+
+test_emails = [
+    "Win a free lottery prize worth 1000 dollars now!",
+    "Hey, can we schedule the review meeting for tomorrow morning?"
+]
+
+sample_vec = tfidf.transform(test_emails)
+
+predictions = nb_model.predict(sample_vec)
+
+print("\n--- Predictions on New Incoming Emails ---")
+
+for text, pred in zip(test_emails, predictions):
+    tag = "SPAM" if pred == 1 else "HAM"
+    print(f'Text: "{text}" -> Classified as: [{tag}]')
+________________________________________
+2. CODE WITH COMMENTS AND EXPLANATION
+# Import required libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+
+# 1. Create dataset containing Spam and Ham messages
+dataset = [
+    ("Win a $1000 Walmart gift card! Click here now to claim your cash reward prize.", "spam"),
+    ("Urgent: Your account security has been compromised. Verify your password now.", "spam"),
+    ("Congratulations! You have been selected for a free lottery ticket worth 50,000.", "spam"),
+    ("Exclusive loan offer approved with 0% interest! Text YES to claim your funds.", "spam"),
+    ("Claim your free entry to win a brand new car today. Call this number now.", "spam"),
+    ("Free trial offer expiring soon! Click the link below to renew your access.", "spam"),
+    ("You have won a guaranteed cash prize! Reply WIN to 88202 to collect.", "spam"),
+    ("Double your income working from home. No experience needed, apply fast.", "spam"),
+    ("Hey, are we still meeting for lunch at 1 PM today?", "ham"),
+    ("Can you send me the updated project report and presentation deck?", "ham"),
+    ("The team meeting has been rescheduled to tomorrow at 10 AM.", "ham"),
+    ("Please review the attached invoice and let me know if any changes are needed.", "ham"),
+    ("Let's catch up over coffee this weekend if you are free.", "ham"),
+    ("Don't forget to submit the assignment before midnight today.", "ham"),
+    ("Thanks for your help with the machine learning assignment yesterday!", "ham"),
+    ("Hi, I just pushed the latest commit to the repository.", "ham")
+] * 20
+
+
+# Convert dataset into a Pandas DataFrame
+df = pd.DataFrame(dataset, columns=["text", "label"])
+
+
+# Convert categorical labels into numerical values
+# Ham = 0 and Spam = 1
+df["label_num"] = df["label"].map({"ham": 0, "spam": 1})
+
+
+# 2. Split dataset into training and testing data
+X_train, X_test, y_train, y_test = train_test_split(
+    df["text"], df["label_num"],
+    test_size=0.25,
+    random_state=42,
+    stratify=df["label_num"]
+)
+
+
+# 3. Convert text into numerical features using TF-IDF
+tfidf = TfidfVectorizer(stop_words="english", lowercase=True)
+
+# Fit vectorizer on training data and transform it
+X_train_vec = tfidf.fit_transform(X_train)
+
+# Transform testing data using the same vectorizer
+X_test_vec = tfidf.transform(X_test)
+
+
+# 4. Create and train Multinomial Naive Bayes classifier
+nb_model = MultinomialNB()
+
+nb_model.fit(X_train_vec, y_train)
+
+
+# 5. Predict labels for test data
+y_pred = nb_model.predict(X_test_vec)
+
+
+# Calculate model accuracy
+acc = accuracy_score(y_test, y_pred)
+
+print("=== ASSIGNMENT 4: SPAM FILTER CLASSIFIER ===")
+print(f"Overall Accuracy: {acc * 100:.2f}%\n")
+
+
+# Display classification performance
+print("Classification Report:")
+
+print(classification_report(
+    y_test, y_pred,
+    target_names=["Ham (Legitimate)", "Spam"]
+))
+
+
+# 6. Test the model using new unseen email messages
+test_emails = [
+    "Win a free lottery prize worth 1000 dollars now!",
+    "Hey, can we schedule the review meeting for tomorrow morning?"
+]
+
+
+# Convert new emails into TF-IDF numerical features
+sample_vec = tfidf.transform(test_emails)
+
+
+# Predict whether emails are Spam or Ham
+predictions = nb_model.predict(sample_vec)
+
+
+print("\n--- Predictions on New Incoming Emails ---")
+
+
+# Display final predictions
+for text, pred in zip(test_emails, predictions):
+
+    # Convert numerical prediction into category
+    tag = "SPAM" if pred == 1 else "HAM"
+
+    print(f'Text: "{text}" -> Classified as: [{tag}]')
+Explanation of the Code
+1. Importing Libraries
+•	pandas: Used for handling the dataset.
+•	train_test_split: Divides the dataset into training and testing sets.
+•	TfidfVectorizer: Converts text into numerical features.
+•	MultinomialNB: Implements the Naive Bayes classification algorithm.
+•	accuracy_score: Calculates prediction accuracy.
+•	classification_report: Displays precision, recall and F1-score.
+•	confusion_matrix: Generates a confusion matrix.
+2. Creating Dataset
+dataset = [...]
+Creates a collection of email messages with two categories:
+•	Spam: Unwanted or promotional messages.
+•	Ham: Normal and legitimate messages.
+* 20 replicates the sample dataset 20 times.
+3. Creating DataFrame
+df = pd.DataFrame(dataset, columns=["text", "label"])
+Converts the dataset into a Pandas DataFrame with two columns:
+•	text: Email message.
+•	label: Spam or Ham category.
+4. Label Encoding
+df["label_num"] = df["label"].map({"ham": 0, "spam": 1})
+Converts text labels into numerical values.
+•	Ham = 0
+•	Spam = 1
+5. Train-Test Split
+train_test_split(
+    df["text"], df["label_num"],
+    test_size=0.25,
+    random_state=42,
+    stratify=df["label_num"]
+)
+Divides the dataset into:
+•	75% training data.
+•	25% testing data.
+random_state=42 ensures reproducible splitting.
+stratify maintains the class proportions in both datasets.
+6. TF-IDF Vectorization
+tfidf = TfidfVectorizer(stop_words="english", lowercase=True)
+TF-IDF stands for Term Frequency–Inverse Document Frequency.
+It converts text into numerical values based on the importance of words.
+•	stop_words="english" removes common English stop words.
+•	lowercase=True converts words into lowercase.
+7. Fit Transform
+X_train_vec = tfidf.fit_transform(X_train)
+Learns the vocabulary and IDF values from training messages and converts them into numerical features.
+8. Transform
+X_test_vec = tfidf.transform(X_test)
+Converts testing messages using the vocabulary learned from training data.
+9. Creating Naive Bayes Classifier
+nb_model = MultinomialNB()
+Creates a Multinomial Naive Bayes classification model.
+10. Training the Model
+nb_model.fit(X_train_vec, y_train)
+Trains the model using numerical email features and their corresponding labels.
+11. Prediction
+y_pred = nb_model.predict(X_test_vec)
+Predicts whether the testing emails are Spam or Ham.
+12. Accuracy Calculation
+accuracy_score(y_test, y_pred)
+Calculates the percentage of correctly classified emails.
+Formula:
+Accuracy = (Correct Predictions / Total Predictions) × 100
+13. Classification Report
+classification_report(y_test, y_pred)
+Displays:
+•	Precision
+•	Recall
+•	F1-score
+•	Support
+14. Testing New Emails
+test_emails = [...]
+Contains two new email messages that are passed to the trained classifier.
+15. Final Prediction
+nb_model.predict(sample_vec)
+Predicts the category of each new email.
+•	0 = HAM
+•	1 = SPAM
+
+
+
+
+# 3. SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+
+## A. Basic Bayesian Network Questions
+
+**Q1. What is a Bayesian Network?**
+
+Ans: A Bayesian Network is a probabilistic graphical model that represents relationships between different variables using a directed acyclic graph.
+
+**Q2. What is the full form of DAG?**
+
+Ans: Directed Acyclic Graph.
+
+**Q3. What is a DAG?**
+
+Ans: A DAG is a graph in which edges have directions and there are no cycles or circular paths.
+
+**Q4. Why do we use a Bayesian Network?**
+
+Ans: We use Bayesian Networks to represent uncertain relationships and calculate probabilities based on available evidence.
+
+**Q5. What is conditional probability?**
+
+Ans: Conditional probability is the probability of an event occurring when another event is already known.
+
+**Q6. What is Bayes' Theorem?**
+
+Ans: Bayes' Theorem is used to calculate the probability of an event based on previously known information.
+
+Formula:
+
+P(A|B) = P(B|A) × P(A) / P(B)
+
+**Q7. What is the objective of this assignment?**
+
+Ans: To construct a Bayesian Network using heart disease medical data and calculate the probability of heart disease based on medical evidence.
+
+**Q8. What is a node in a Bayesian Network?**
+
+Ans: A node represents a variable in the network, such as age, cholesterol or heart disease.
+
+**Q9. What is an edge in a Bayesian Network?**
+
+Ans: An edge represents a directed relationship between two variables.
+
+**Q10. What is a Conditional Probability Table (CPT)?**
+
+Ans: A CPT is a table that stores the conditional probabilities of a variable based on its parent variables.
+
+## B. Python Libraries and Functions
+
+**Q11. Which libraries are used in this assignment?**
+
+Ans:
+1. Pandas
+2. pgmpy
+
+**Q12. What is Pandas?**
+
+Ans: Pandas is a Python library used for data manipulation and analysis.
+
+**Q13. What is pgmpy?**
+
+Ans: pgmpy stands for Probabilistic Graphical Models using Python. It is a library used to create and perform inference on probabilistic graphical models.
+
+**Q14. What is the use of read_csv()?**
+
+Ans: It reads a CSV file and converts it into a Pandas DataFrame.
+
+**Q15. What is MaximumLikelihoodEstimator?**
+
+Ans: It is an estimator that learns the probability values of a Bayesian Network from the given dataset using Maximum Likelihood Estimation.
+
+**Q16. What is the use of model.fit()?**
+
+Ans: It learns the parameters of the Bayesian Network using the given dataset and estimator.
+
+**Q17. What is VariableElimination?**
+
+Ans: Variable Elimination is an inference algorithm used to calculate probability distributions in a Bayesian Network.
+
+**Q18. What is the use of inference.query()?**
+
+Ans: It calculates the probability distribution of a required variable based on the given evidence.
+
+**Q19. What is evidence in a Bayesian Network?**
+
+Ans: Evidence is the known information provided to the model to calculate the probability of another variable.
+
+Example: Chest pain = 3 and cholesterol = 1.
+
+## C. Important Conceptual Questions
+
+**Q20. What is Maximum Likelihood Estimation (MLE)?**
+
+Ans: MLE is a statistical method used to estimate model parameters by finding the values that make the observed data most likely.
+
+**Q21. What is the difference between prior and posterior probability?**
+
+Ans:
+- Prior probability: Probability before considering new evidence.
+- Posterior probability: Updated probability after considering new evidence.
+
+**Q22. What is the difference between Bayesian Network and Naive Bayes?**
+
+Ans:
+- Bayesian Network represents relationships between variables using a graphical structure.
+- Naive Bayes assumes that features are conditionally independent given the class.
+
+**Q23. What is probabilistic inference?**
+
+Ans: It is the process of calculating unknown probabilities using known information and relationships between variables.
+
+**Q24. What is Variable Elimination used for?**
+
+Ans: It is used to calculate the required probability by eliminating unnecessary variables from the probability calculations.
+
+**Q25. What is the difference between training and inference?**
+
+Ans:
+- Training: Learning probability values from the dataset.
+- Inference: Calculating probabilities using the trained model.
+
+**Q26. Can Bayesian Networks handle uncertainty?**
+
+Ans: Yes. Bayesian Networks are specifically designed to represent and reason under uncertainty.
+
+**Q27. What happens if evidence is not provided?**
+
+Ans: The model calculates the probability distribution without any additional evidence, using the learned probability values.
+
+**Q28. What are the advantages of Bayesian Networks?**
+
+Ans:
+1. Handle uncertain information.
+2. Represent relationships between variables.
+3. Support probabilistic reasoning.
+4. Can work with incomplete evidence.
+
+**Q29. What are the applications of Bayesian Networks?**
+
+Ans:
+1. Medical diagnosis.
+2. Weather prediction.
+3. Risk analysis.
+4. Fault detection.
+5. Decision support systems.
+
+## D. Heart Disease Dataset Questions
+
+**Q30. Which dataset is used in this assignment?**
+
+Ans: Cleveland Heart Disease Dataset.
+
+**Q31. What is the purpose of the Heart Disease dataset?**
+
+Ans: It contains medical attributes that can be used to study and predict the presence of heart disease.
+
+**Q32. What does the cp attribute represent?**
+
+Ans: It represents the chest pain type.
+
+**Q33. What does chol represent?**
+
+Ans: It represents serum cholesterol level.
+
+**Q34. What does age represent?**
+
+Ans: It represents the age of the patient.
+
+**Q35. What does fbs represent?**
+
+Ans: It represents fasting blood sugar.
+
+**Q36. What is the heartdisease variable?**
+
+Ans: It is the target variable representing the heart disease status.
+
+**Q37. Which variables are connected to heartdisease in this program?**
+
+Ans:
+1. Age
+2. Chest pain (cp)
+3. Cholesterol (chol)
+4. Fasting blood sugar (fbs)
+
+**Q38. Why is heart disease diagnosis suitable for a Bayesian Network?**
+
+Ans: Because medical diagnosis involves uncertainty, and Bayesian Networks help calculate probabilities using available patient information.
+
+## E. Practical Execution Questions
+
+**Q39. What is the output of this program?**
+
+Ans: It displays the probability distribution of heart disease based on the given evidence.
+
+**Q40. What evidence is provided in the given code?**
+
+Ans:
+- Chest pain (cp) = 3
+- Cholesterol (chol) = 1
+
+**Q41. Which variable are we predicting?**
+
+Ans: `heartdisease`.
+
+**Q42. Which algorithm is used for parameter learning?**
+
+Ans: Maximum Likelihood Estimation.
+
+**Q43. Which algorithm is used for probabilistic inference?**
+
+Ans: Variable Elimination.
+
+**Q44. Is Bayesian Network a supervised or unsupervised learning algorithm?**
+
+Ans: In this assignment, it is used in a supervised learning setting because the dataset contains a target variable, heartdisease, and the model learns its probabilities from labelled data.
+
+**Q45. What happens if we change the evidence?**
+
+Ans: The resulting probability distribution may change depending on the new evidence.
+
+---
+
+# IMPORTANT PRACTICAL VIVA REVISION
+
+| Concept | Key point to remember |
+|---|---|
+| Bayesian Network | Probabilistic graphical model |
+| DAG | Directed Acyclic Graph |
+| Node | Represents a variable |
+| Edge | Represents a relationship |
+| CPT | Conditional Probability Table |
+| MLE | Maximum Likelihood Estimation |
+| Inference | Calculating probabilities |
+| Variable Elimination | Inference algorithm |
+| Evidence | Known information |
+| Posterior Probability | Probability after evidence |
+| pgmpy | Python probabilistic graphical model library |
+
+## Important practical points
+
+1. Dataset used: `heart.csv`
+2. Model: Bayesian Network
+3. Parameter learning: Maximum Likelihood Estimation
+4. Inference algorithm: Variable Elimination
+5. Evidence: `cp = 3`, `chol = 1`
+6. Target variable: `heartdisease`
+
+## Important note about your supplied output
+
+The two cases in your supplied output:
+
+- Case 1: `age=1, cp=4, chol=1`
+- Case 2: `age=0, cp=1, chol=0`
+
+do not match the code you provided.
+
+Your current code performs only one query using `cp=3` and `chol=1`. Therefore, it will not generate those two case results.
+
+Also, your manual describes the heart disease target as having values from 0 to 4. The output probabilities depend on the actual dataset and its encoding.
+
+**For the practical exam:** Remember the difference between MLE and Variable Elimination. MLE learns probabilities, whereas Variable Elimination calculates probabilities using evidence.

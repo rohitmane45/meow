@@ -1,496 +1,323 @@
-Assignment 5 – Air Quality Data Analysis and Visualization
-Assignment Number: 05 | Dataset: City_Air_Quality.csv
-
-Problem Statement: To analyze city air quality data by calculating descriptive statistical measures and visualizing AQI trends, individual pollutant concentrations and pollutant distributions using Python libraries.
-
-Libraries Used:
-- Pandas – Data loading and analysis.
-- Matplotlib – Data visualization.
-- Seaborn – Statistical visualization.
-===========================================================================================
-1. Python Code – Without Comments
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+QAI ASSIGNMENT 5: Implement Tarrataca's Quantum Production System with the 3-Puzzle Problem
+Topic: Quantum Production System using Grover's Search Algorithm
+This assignment uses a quantum circuit to select a production rule that moves the blank tile from the initial puzzle state to the goal state. I'll explain the exact implementation from your uploaded PDF in the same three-part practical format. 
+=========================================================================================================
+QAI - 5.pdf
+PART 1: Plain code without comments
+Copy-ready Python code
+
+import numpy as np
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+from qiskit_aer import AerSimulator
+
+def tarrataca_quantum_production_3puzzle():
+
+    r_reg = QuantumRegister(2, name="rule")
+    flag = QuantumRegister(1, name="flag")
+    cr = ClassicalRegister(2, name="meas")
+
+    qc = QuantumCircuit(r_reg, flag, cr)
+
+    qc.x(flag)
+    qc.h(flag)
+
+    qc.h(r_reg)
+    qc.barrier(label="Superposition")
+
+    qc.x(r_reg[1])
+    qc.mcx(r_reg, flag[0])
+    qc.x(r_reg[1])
+    qc.barrier(label="Oracle (Goal Match)")
+
+    qc.h(r_reg)
+    qc.x(r_reg)
+
+    qc.h(r_reg[1])
+    qc.cx(r_reg[0], r_reg[1])
+    qc.h(r_reg[1])
+
+    qc.x(r_reg)
+    qc.h(r_reg)
+    qc.barrier(label="Diffusion")
+
+    qc.measure(r_reg, cr)
+
+    return qc
+
+
+qc = tarrataca_quantum_production_3puzzle()
+
+print("--- Tarrataca Quantum Production System Circuit (3-Puzzle) ---")
+print(qc.draw(output="text"))
+
+simulator = AerSimulator()
+compiled_qc = transpile(qc, simulator)
+job = simulator.run(compiled_qc, shots=2048)
+counts = job.result().get_counts()
+
+print("\n--- Execution Results (2048 shots) ---")
+
+rules_map = {
+    "00": "Rule 0: Move Blank Left",
+    "01": "Rule 1: Move Blank Right (Target Solution)",
+    "10": "Rule 2: Move Blank Up",
+    "11": "Rule 3: Move Blank Down"
+}
+
+for bitstring, count in sorted(counts.items(), key=lambda x: x[1], reverse=True):
+    print(f"Rule Bits: {bitstring} | {rules_map.get(bitstring)} | Counts: {count}/2048 ({count/2048*100:.2f}%)")
+==========================================================
+PART 2: Code with comments and explanations
+1. Import libraries
+import numpy as np
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+from qiskit_aer import AerSimulator
+•	numpy: Provides mathematical functions.
+•	QuantumCircuit: Creates the quantum circuit.
+•	QuantumRegister: Creates quantum registers.
+•	ClassicalRegister: Stores measurement results.
+•	transpile: Converts the circuit into a simulator-compatible circuit.
+•	AerSimulator: Runs the quantum circuit on a classical computer.
+2. Define the main function
+def tarrataca_quantum_production_3puzzle():
+This function creates a quantum circuit to select the correct production rule for the 3-puzzle problem.
+3. Understand the 3-puzzle problem
+The puzzle contains three numbered tiles and one blank space, represented by 0.
+Initial state
+1
+2
+0
+3
+Move blank right
+Goal state
+1
+2
+3
+0
+Initial state:
+[1, 2, 0, 3]
+Goal state:
+[1, 2, 3, 0]
+The blank tile is at the bottom-left in the initial state. We need to move it right to reach the goal state.
+4. Register setup
+r_reg = QuantumRegister(2, name="rule")
+flag = QuantumRegister(1, name="flag")
+cr = ClassicalRegister(2, name="meas")
+
+qc = QuantumCircuit(r_reg, flag, cr)
+We create:
+•	r_reg: Two qubits to represent four possible production rules.
+•	flag: One ancilla qubit used for phase kickback.
+•	cr: Two classical bits to store the selected rule.
+The four rules are:
+Binary	Rule
+00	Move blank left
+01	Move blank right
+10	Move blank up
+11	Move blank down
+Why two qubits?
+Two qubits can represent four possible combinations:
+\[ 2^2=4 \]
+5. Initialize the flag qubit
+qc.x(flag)
+qc.h(flag)
+•	X gate changes the initial state from \(|0\rangle\) to \(|1\rangle\).
+•	H gate creates the state \(|-\rangle\).
+\[ |-\rangle=\frac{|0\rangle-|1\rangle}{\sqrt{2}} \]
+This state helps the oracle mark the correct rule using phase kickback.
+6. Create superposition
+qc.h(r_reg)
+qc.barrier(label="Superposition")
+Hadamard gates are applied to both rule qubits.
+This creates an equal superposition of all four possible rules:
+\[ \frac{1}{2}(|00\rangle+|01\rangle+|10\rangle+|11\rangle) \]
+Simple explanation: The quantum circuit considers all four candidate rules in superposition.
+7. Quantum production oracle
+qc.x(r_reg[1])
+qc.mcx(r_reg, flag[0])
+qc.x(r_reg[1])
+qc.barrier(label="Oracle (Goal Match)")
+The oracle identifies the correct production rule.
+In our problem:
+•	Initial state: [1, 2, 0, 3]
+•	Goal state: [1, 2, 3, 0]
+•	Correct rule: 01 (Move blank right)
+The first X gate temporarily changes the most significant rule qubit so that the multi-controlled operation selects the desired 01 state.
+mcx() means Multi-Controlled X gate.
+It applies an X operation to the flag only when both control qubits are 1.
+Because the flag is in the \(|-\rangle\) state, this operation changes the phase of the matching rule.
+Important: The oracle marks the correct rule; it does not physically move the puzzle tiles.
+8. Diffusion operator
+qc.h(r_reg)
+qc.x(r_reg)
+
+qc.h(r_reg[1])
+qc.cx(r_reg[0], r_reg[1])
+qc.h(r_reg[1])
+
+qc.x(r_reg)
+qc.h(r_reg)
+qc.barrier(label="Diffusion")
+This is the diffusion operator used in Grover's search.
+Its purpose is to increase the probability of measuring the marked rule.
+The main operations are:
+1.	Apply Hadamard gates.
+2.	Apply X gates.
+3.	Apply a controlled-Z equivalent using H-CNOT-H.
+4.	Apply X gates again.
+5.	Apply Hadamard gates again.
+Simple explanation: The oracle marks the correct answer, and the diffusion operator amplifies its probability.
+9. Measurement
+qc.measure(r_reg, cr)
+This measures the two rule qubits and stores the result in the classical register.
+The expected selected rule is:
+01
+10. Execute the circuit
+simulator = AerSimulator()
+compiled_qc = transpile(qc, simulator)
+
+job = simulator.run(compiled_qc, shots=2048)
+counts = job.result().get_counts()
+•	AerSimulator() creates the simulator.
+•	transpile() prepares the circuit for execution.
+•	shots=2048 executes the circuit 2,048 times.
+•	get_counts() collects the measurement results.
+11. Map the rules
+rules_map = {
+    "00": "Rule 0: Move Blank Left",
+    "01": "Rule 1: Move Blank Right (Target Solution)",
+    "10": "Rule 2: Move Blank Up",
+    "11": "Rule 3: Move Blank Down"
+}
+This dictionary converts binary outputs into meaningful production rules.
+12. Display the result
+for bitstring, count in sorted(counts.items(), key=lambda x: x[1], reverse=True):
+    print(f"Rule Bits: {bitstring} | {rules_map.get(bitstring)} | Counts: {count}/2048 ({count/2048*100:.2f}%)")
+•	sorted() sorts the results by count.
+•	bitstring contains the measured rule.
+•	count tells us how many times the rule was selected.
+•	rules_map.get() displays the corresponding rule name.
+PART 3: Expected output
+Your PDF gives this output:
+--- Execution Results (2048 shots) ---
+Rule Bits: 01 | Rule 1: Move Blank Right (Target Solution) | Counts: 2048/2048 (100.00%)
+Expected result
+The selected rule is 01, which represents Move Blank Right. 
+QAI - 5.pdf
+========================================================================================================
+PART 4: Practical viva questions and answers
+Basic concepts
+Q1. What is the 3-puzzle problem?
+It is a tile-based puzzle in which we move numbered tiles and a blank space to reach a required goal arrangement.
+Q2. What is Tarrataca's Quantum Production System?
+It is a quantum approach to production-system rule selection, where candidate rules are represented using quantum states and a quantum search process.
+Q3. What is a production rule?
+A production rule is an action that can be applied to the current problem state to move toward the goal.
+Q4. What is the initial state in this assignment?
+[1, 2, 0, 3]
+Q5. What is the goal state?
+[1, 2, 3, 0]
+Q6. What does 0 represent in the puzzle?
+It represents the blank space.
+Q7. Which production rule reaches the goal state?
+Rule 01, Move Blank Right.
+Q8. How many possible rules are defined?
+Four rules.
+Q9. Why are two qubits used for the rule register?
+Because two qubits can represent four different binary combinations.
+Q10. What are the four production rules?
+•	00: Left
+•	01: Right
+•	10: Up
+•	11: Down
+Quantum computing concepts
+Q11. What is superposition?
+Superposition allows a qubit to represent a combination of possible states before measurement.
+Q12. Which gate creates superposition?
+The Hadamard gate.
+Q13. What is a quantum oracle?
+An oracle is a quantum operation that identifies or marks the correct solution.
+Q14. What is the purpose of the oracle in this program?
+It marks rule 01 because that rule moves the initial puzzle state to the goal state.
+Q15. What is Grover's search algorithm?
+Grover's algorithm is a quantum search algorithm used to find a marked item in an unsorted search space.
+Q16. What is the purpose of the diffusion operator?
+It increases the probability of measuring the marked solution.
+Q17. What is phase kickback?
+Phase kickback is a quantum effect in which a phase change is transferred to a control state through a controlled operation.
+Q18. Why is the flag qubit initialized using X and H gates?
+To prepare the flag qubit in the \(|-\rangle\) state for phase kickback.
+Q19. What is an ancilla qubit?
+An extra qubit used to support a quantum operation. Here, it is used as the oracle flag.
+Q20. What is a multi-controlled X gate?
+It applies an X gate to the target qubit only when all control qubits are in state 1.
+Code-related questions
+Q21. What is QuantumRegister(2)?
+It creates a quantum register containing two qubits.
+Q22. What is ClassicalRegister(2)?
+It creates two classical bits to store measurement results.
+Q23. What does qc.h(r_reg) do?
+It applies a Hadamard gate to both qubits in the rule register.
+Q24. What does qc.mcx() do?
+It applies a multi-controlled X gate.
+Q25. Why are X gates applied before and after the MCX gate?
+They help select the required binary state for the oracle and restore the register afterward.
+Q26. What is the purpose of qc.cx()?
+It applies a controlled-NOT operation between two qubits.
+Q27. What does qc.measure() do?
+It measures quantum states and stores the results in classical bits.
+Q28. What does AerSimulator() do?
+It simulates the execution of a quantum circuit.
+Q29. What does shots=2048 mean?
+The circuit is executed 2,048 times.
+Q30. What does get_counts() return?
+It returns the number of occurrences of each measured bitstring.
+Important conceptual questions
+Q31. What is the difference between classical search and Grover's search?
+Classical unstructured search generally needs \(O(N)\) queries, while Grover's search needs approximately \(O(\sqrt{N})\) oracle queries.
+Q32. What is the role of the diffusion operator in Grover's algorithm?
+It amplifies the probability of the marked solution through amplitude amplification.
+Q33. What is the purpose of barrier()?
+It separates different stages of the quantum circuit for clarity and organization.
+Q34. Does the oracle physically move the blank tile?
+No. It marks the quantum state representing the correct rule. The program measures the selected rule.
+Q35. What is the final answer of this assignment?
+01, which represents Move Blank Right.
+Q36. Why is the flag qubit needed?
+It is used for phase kickback while marking the correct rule.
+Q37. What is amplitude amplification?
+It is a process that increases the probability amplitude of the desired solution.
+Q38. What is the difference between a quantum register and a classical register?
+A quantum register stores qubits, while a classical register stores ordinary binary measurement results.
+Q39. What is the main objective of this assignment?
+To demonstrate how a quantum production system can select a suitable production rule for the 3-puzzle problem using a quantum search circuit.
+Q40. What is the final output probability shown in the PDF?
+The correct rule 01 is measured 2,048 times out of 2,048, giving 100%.
+======================================================================================================================================
+PART 5: One-minute explanation for your practical exam
+"This assignment implements Tarrataca's Quantum Production System for the 3-puzzle problem.
+First, we define the initial puzzle state as 1, 2, blank, 3, and the goal state as 1, 2, 3, blank.
+We define four production rules: Left, Right, Up and Down. We use two quantum bits to represent these four rules.
+Next, we apply Hadamard gates to create a superposition of all possible rules.
+Then, we use a quantum oracle to mark the correct rule, which is 01, representing Move Blank Right.
+After that, we apply the diffusion operator to amplify the probability of the correct rule.
+Finally, we measure the quantum register. The output is 01, which represents the correct production rule to reach the goal state."
+Quick revision sheet
+Important point	Answer
+Assignment	5
+Algorithm	Quantum Production System
+Search technique	Grover's search
+Initial state	[1, 2, 0, 3]
+Goal state	[1, 2, 3, 0]
+Rule qubits	2
+Possible rules	4
+Correct rule	01
+Correct action	Move blank right
+Oracle	Marks correct rule
+Diffusion	Amplifies solution
+Flag qubit	1
+Shots	2048
+Output	100% for 01
+Important technical note for your understanding: The supplied code is a simplified quantum rule-selection demonstration. It hardcodes the oracle to mark 01 based on the stated initial and goal states; it does not implement a general-purpose puzzle solver that dynamically checks every possible board state. Also, the code uses one oracle marking operation followed by one diffusion operation. 
+QAI - 5.pdf
 
-
-# 1. Load Air Quality Dataset
-
-df_aqi = pd.read_csv("City_Air_Quality.csv")
-
-df_aqi["Date"] = pd.to_datetime(df_aqi["Date"])
-
-
-print("=== AIR QUALITY STATISTICAL SUMMARY ===")
-
-print(
-    df_aqi[
-        ["AQI", "PM2.5", "PM10", "NO2", "SO2"]
-    ].describe().round(2)
-)
-
-
-# 2. Multi-Panel Visualization
-
-fig, axes = plt.subplots(3, 1, figsize=(12, 12))
-
-
-# Plot 1: Overall AQI Time-Series Trend
-
-axes[0].plot(
-    df_aqi["Date"],
-    df_aqi["AQI"],
-    color="darkorange",
-    linewidth=1.5,
-    label="Overall AQI"
-)
-
-axes[0].axhline(
-    y=100,
-    color="red",
-    linestyle="--",
-    alpha=0.7,
-    label="Moderate/Unhealthy Baseline (100)"
-)
-
-axes[0].set_title(
-    "Overall Air Quality Index (AQI) Trend Over Time",
-    fontsize=12,
-    fontweight="bold"
-)
-
-axes[0].set_ylabel("AQI Value")
-axes[0].grid(True, linestyle="--", alpha=0.5)
-axes[0].legend(loc="upper right")
-
-
-# Plot 2: Individual Pollutant Concentrations
-
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["PM2.5"],
-    color="crimson",
-    label="PM2.5",
-    alpha=0.8
-)
-
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["PM10"],
-    color="teal",
-    label="PM10",
-    alpha=0.7
-)
-
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["NO2"],
-    color="purple",
-    label="NO2",
-    alpha=0.7
-)
-
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["SO2"],
-    color="green",
-    label="SO2",
-    alpha=0.7
-)
-
-axes[1].set_title(
-    "Individual Pollutant Concentrations (µg/m³)",
-    fontsize=12,
-    fontweight="bold"
-)
-
-axes[1].set_ylabel("Concentration")
-axes[1].grid(True, linestyle="--", alpha=0.5)
-axes[1].legend(loc="upper right")
-
-
-# Plot 3: Distribution Boxplots
-
-sns.boxplot(
-    data=df_aqi[["PM2.5", "PM10", "NO2", "SO2"]],
-    ax=axes[2],
-    palette="Set2"
-)
-
-axes[2].set_title(
-    "Distribution of Specific Pollutants",
-    fontsize=12,
-    fontweight="bold"
-)
-
-axes[2].set_ylabel("Concentration (µg/m³)")
-axes[2].grid(True, linestyle="--", alpha=0.5)
-
-
-plt.tight_layout()
-
-plt.savefig("city_air_quality_visualization.png", dpi=200)
-
-plt.show()
-
-
-2. Python Code – With Comments and Explanation
-# Import required libraries
-
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-
-# 1. Load Air Quality Dataset
-
-# Read air quality data from CSV file
-df_aqi = pd.read_csv("City_Air_Quality.csv")
-
-# Convert Date column into datetime format
-df_aqi["Date"] = pd.to_datetime(df_aqi["Date"])
-
-
-# Display statistical summary
-
-print("=== AIR QUALITY STATISTICAL SUMMARY ===")
-
-# Calculate descriptive statistics for selected columns
-# round(2) displays values up to two decimal places
-print(
-    df_aqi[
-        ["AQI", "PM2.5", "PM10", "NO2", "SO2"]
-    ].describe().round(2)
-)
-
-
-# 2. Multi-Panel Visualization
-
-# Create three graphs arranged vertically
-fig, axes = plt.subplots(3, 1, figsize=(12, 12))
-
-
-# Plot 1: Overall AQI Time-Series Trend
-
-# Plot AQI values against dates
-axes[0].plot(
-    df_aqi["Date"],
-    df_aqi["AQI"],
-    color="darkorange",
-    linewidth=1.5,
-    label="Overall AQI"
-)
-
-# Add horizontal reference line at AQI 100
-axes[0].axhline(
-    y=100,
-    color="red",
-    linestyle="--",
-    alpha=0.7,
-    label="Moderate/Unhealthy Baseline (100)"
-)
-
-# Set graph title
-axes[0].set_title(
-    "Overall Air Quality Index (AQI) Trend Over Time",
-    fontsize=12,
-    fontweight="bold"
-)
-
-# Set Y-axis label
-axes[0].set_ylabel("AQI Value")
-
-# Display grid
-axes[0].grid(True, linestyle="--", alpha=0.5)
-
-# Display legend
-axes[0].legend(loc="upper right")
-
-
-# Plot 2: Individual Pollutant Concentrations
-
-# Plot PM2.5 concentration
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["PM2.5"],
-    color="crimson",
-    label="PM2.5",
-    alpha=0.8
-)
-
-# Plot PM10 concentration
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["PM10"],
-    color="teal",
-    label="PM10",
-    alpha=0.7
-)
-
-# Plot NO2 concentration
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["NO2"],
-    color="purple",
-    label="NO2",
-    alpha=0.7
-)
-
-# Plot SO2 concentration
-axes[1].plot(
-    df_aqi["Date"],
-    df_aqi["SO2"],
-    color="green",
-    label="SO2",
-    alpha=0.7
-)
-
-# Set graph title
-axes[1].set_title(
-    "Individual Pollutant Concentrations (µg/m³)",
-    fontsize=12,
-    fontweight="bold"
-)
-
-# Set Y-axis label
-axes[1].set_ylabel("Concentration")
-
-# Display grid and legend
-axes[1].grid(True, linestyle="--", alpha=0.5)
-axes[1].legend(loc="upper right")
-
-
-# Plot 3: Distribution Boxplots
-
-# Create boxplots for different pollutants
-sns.boxplot(
-    data=df_aqi[["PM2.5", "PM10", "NO2", "SO2"]],
-    ax=axes[2],
-    palette="Set2"
-)
-
-# Set graph title
-axes[2].set_title(
-    "Distribution of Specific Pollutants",
-    fontsize=12,
-    fontweight="bold"
-)
-
-# Set Y-axis label
-axes[2].set_ylabel("Concentration (µg/m³)")
-
-# Display grid
-axes[2].grid(True, linestyle="--", alpha=0.5)
-
-
-# Adjust spacing between graphs
-plt.tight_layout()
-
-# Save visualization as PNG image
-plt.savefig("city_air_quality_visualization.png", dpi=200)
-
-# Display all three graphs
-plt.show()
-
-========================================================================================
-
-Important Code Explanation
-Function / Concept	Explanation
-pd.read_csv()	Loads the CSV dataset.
-pd.to_datetime()	Converts date values into datetime format.
-describe()	Calculates descriptive statistics.
-round(2)	Rounds values to two decimal places.
-plt.subplots()	Creates multiple graphs in one figure.
-axes[0].plot()	Creates the AQI time-series graph.
-axhline()	Draws a horizontal reference line.
-set_title()	Sets the graph title.
-set_ylabel()	Sets the Y-axis label.
-grid()	Displays grid lines.
-legend()	Displays graph labels.
-sns.boxplot()	Creates boxplots for pollutant distributions.
-tight_layout()	Adjusts graph spacing.
-savefig()	Saves the graph as an image.
-show()	Displays the graph.
-
-
-3. Expected Output
-A. Air Quality Statistical Summary
-=== AIR QUALITY STATISTICAL SUMMARY ===
-
-          AQI   PM2.5    PM10    NO2    SO2
-
-count  365.00  365.00  365.00  365.00  365.00
-mean   104.85   62.69  113.82   40.51   14.71
-std     46.72   30.81   47.99   11.91    4.89
-min      2.00   10.00   20.00   13.40    2.00
-25%     71.00   41.00   76.90   32.70   11.50
-50%    104.00   62.70  115.30   40.20   14.50
-75%    137.00   83.10  148.10   47.70   18.30
-max    241.00  148.50  257.10   77.40   27.90
-
-
-B. Graphical Output
-
-The program generates three graphs in one figure:
-1. Overall AQI Time-Series Trend.
-2. Individual Pollutant Concentrations.
-3. Distribution of Specific Pollutants (Boxplots).
--================================================================================================
-
-The numerical output above is reproduced from your manual. The graph depends on the actual CSV dataset.
-
-4. SPPU Practical Viva Questions and Answers
-A. Basic Air Quality Questions
-Q1. What is Air Quality Index (AQI)?
-
-Answer: AQI is a numerical scale used to represent the quality of air. It indicates how clean or polluted the air is.
-
-Q2. What is the purpose of this assignment?
-
-Answer: The purpose is to analyze air quality data, calculate statistical summaries and visualize AQI trends and pollutant concentrations.
-
-Q3. What is air pollution?
-
-Answer: Air pollution is the presence of harmful substances such as gases, smoke and particles in the atmosphere.
-
-Q4. What are the major pollutants used in this assignment?
-
-Answer:
-- PM2.5
-- PM10
-- NO2
-- SO2
-Q5. What is PM2.5?
-
-Answer: PM2.5 refers to fine particulate matter having a diameter of 2.5 micrometres or less.
-
-Q6. What is PM10?
-
-Answer: PM10 refers to particulate matter having a diameter of 10 micrometres or less.
-
-Q7. What is NO2?
-
-Answer: NO2 stands for Nitrogen Dioxide. It is an air pollutant mainly produced by vehicle emissions and industrial activities.
-
-Q8. What is SO2?
-
-Answer: SO2 stands for Sulphur Dioxide. It is a harmful gas mainly produced by burning fossil fuels and industrial processes.
-B. Pandas and Statistical Questions
-Q9. What is Pandas?
-
-Answer: Pandas is a Python library used for data manipulation and analysis.
-
-Q10. What is the use of pd.read_csv()?
-
-Answer: It reads data from a CSV file and converts it into a DataFrame.
-
-Q11. Why do we use pd.to_datetime()?
-
-Answer: It converts date values into datetime format, which helps in time-based analysis.
-
-Q12. What is descriptive statistics?
-
-Answer: Descriptive statistics summarizes data using mean, standard deviation, minimum, maximum and quartiles.
-
-Q13. What is the use of describe()?
-
-Answer: It generates a statistical summary of numerical columns.
-
-Q14. What is mean?
-
-Answer: Mean is the average of all values in a dataset.
-
-Q15. What is median?
-
-Answer: Median is the middle value after arranging data in ascending or descending order.
-
-Q16. What is standard deviation?
-
-Answer: Standard deviation measures how much the data values are spread around the mean.
-
-Q17. What is the meaning of the 25%, 50% and 75% values in describe()?
-
-Answer:
-- 25% represents the first quartile.
-- 50% represents the median.
-- 75% represents the third quartile.
-C. Data Visualization Questions
-Q18. What is Data Visualization?
-
-Answer: Data Visualization is the graphical representation of data using charts, graphs and plots.
-
-Q19. Which libraries are used for visualization in this assignment?
-
-Answer: Matplotlib and Seaborn.
-
-Q20. What is Matplotlib?
-
-Answer: Matplotlib is a Python library used to create graphs such as line charts, bar charts and histograms.
-
-Q21. What is Seaborn?
-
-Answer: Seaborn is a Python visualization library built on Matplotlib. It is used to create statistical graphs.
-
-Q22. What is a time-series graph?
-
-Answer: A time-series graph represents data values over time to identify trends and patterns.
-
-Q23. Why is a line graph used for AQI?
-
-Answer: A line graph helps us understand how air quality changes over different dates.
-
-Q24. What is the use of plt.subplots()?
-
-Answer: It creates multiple plots inside a single figure.
-
-Q25. What does figsize=(12,12) represent?
-
-Answer: It specifies the width and height of the figure in inches.
-
-Q26. What is the use of axhline()?
-
-Answer: It draws a horizontal reference line on a graph.
-
-Q27. What is the use of legend()?
-
-Answer: It displays labels that identify different lines or data series in a graph.
-D. Boxplot and Advanced Questions
-Q28. What is a Boxplot?
-
-Answer: A Boxplot is a statistical graph used to represent the distribution of data, median, quartiles and potential outliers.
-
-Q29. Why do we use a boxplot in this assignment?
-
-Answer: We use boxplots to compare the distribution and spread of different air pollutants.
-
-Q30. What are the five-number summary values in a boxplot?
-
-Answer:
-1. Minimum
-2. First Quartile (Q1)
-3. Median (Q2)
-4. Third Quartile (Q3)
-5. Maximum
-Q31. What is an outlier in a boxplot?
-
-Answer: An outlier is a value that lies unusually far from the other observations and is generally displayed as an individual point.
-
-Q32. What is the difference between a line plot and a boxplot?
-
-Answer:
-Line Plot	Boxplot
-Shows trends over time.	Shows data distribution.
-Connects data points.	Displays quartiles and median.
-Useful for time-series analysis.	Useful for comparing distributions.
-
-Q33. What is the use of tight_layout()?
-
-Answer: It automatically adjusts the spacing between plots to prevent overlapping elements.
-
-Q34. What is the use of savefig()?
-
-Answer: It saves the generated graph into an image file.
-
-Q35. What does AQI = 100 represent in this program?
-
-Answer: It represents the horizontal reference baseline drawn in the graph for comparison with the AQI values.

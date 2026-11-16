@@ -1,269 +1,241 @@
-Assignment 1 – Data Loading, Storage and File Formats
-Problem Statement: Analyzing Sales Data from Multiple File Formats.
-Dataset: Sales data in CSV, Excel and JSON formats.
-1. Code – Without Comments
-Copy this version directly into your .py or .txt file.
-import pandas as pd
-import json
+QAI ASSIGNMENT 1
+Title: Implementation of 16 Qubit Random Number Generator
+Subject: Computer Laboratory II – QAI (417526)
+PART 1 — PLAIN CODE (WITHOUT COMMENTS)
+COPY THIS CODE DIRECTLY INTO YOUR TXT FILE
 
-df_transactions = pd.read_csv("sales_transactions.csv")
-df_catalog = pd.read_excel("product_catalog.xlsx", sheet_name="Products")
-df_feedback = pd.read_json("customer_feedback.json")
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
 
-df_transactions["Date"] = pd.to_datetime(df_transactions["Date"])
-df_transactions["Quantity"] = pd.to_numeric(df_transactions["Quantity"], errors="coerce")
-df_transactions["UnitPrice"] = pd.to_numeric(df_transactions["UnitPrice"], errors="coerce")
+def generate_16bit_qrng(shots=5):
+    n_qubits = 16
+    qc = QuantumCircuit(n_qubits, n_qubits)
 
-df_merged = df_transactions.merge(df_catalog, on="ProductID", how="left")
-df_merged = df_merged.merge(df_feedback, on="TransactionID", how="left")
+    qc.h(range(n_qubits))
 
-df_merged["GrossRevenue"] = df_merged["Quantity"] * df_merged["UnitPrice"]
-df_merged["DiscountPct"] = df_merged["DiscountPct"].fillna(0.0)
-df_merged["NetRevenue"] = df_merged["GrossRevenue"] * (1 - df_merged["DiscountPct"])
+    qc.measure(range(n_qubits), range(n_qubits))
 
-print("=== MERGED & PROCESSED SALES DATA ===")
+    simulator = AerSimulator()
+    compiled_circuit = transpile(qc, simulator)
+    job = simulator.run(compiled_circuit, shots=shots, memory=True)
+    result = job.result()
 
-cols_to_show = ["TransactionID", "ProductName", "Category", "Quantity", "GrossRevenue", "NetRevenue", "PaymentMode"]
+    bitstrings = result.get_memory()
 
-print(df_merged[cols_to_show].to_string(index=False))
+    return qc, bitstrings
 
-print("\n--- Summary by Region ---")
+qc, random_bitstrings = generate_16bit_qrng(shots=5)
 
-regional_summary = df_merged.groupby("Region").agg(
-    TotalOrders=("TransactionID", "count"),
-    TotalNetRevenue=("NetRevenue", "sum"),
-    AvgRating=("CustomerRating", "mean")
-).reset_index()
+print("--- Generated 16-bit Quantum Random Numbers ---")
+for i, bitstring in enumerate(random_bitstrings, 1):
+    decimal_val = int(bitstring, 2)
+    hex_val = hex(decimal_val).upper()
+    print(f"Sample {i}:")
+    print(f" Binary : {bitstring}")
+    print(f" Hex : {hex_val}")
+    print(f" Decimal: {decimal_val}\n")
+PART 2 — CODE WITH COMMENTS AND EXPLANATION
+A. Code with comments
 
-print(regional_summary.to_string(index=False))
+# Import required libraries
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
 
-df_merged.to_csv("unified_sales_analysis.csv", index=False)
+# Function to generate 16-bit quantum random numbers
+def generate_16bit_qrng(shots=5):
 
+    # Initialize 16 qubits
+    n_qubits = 16
 
+    # Create quantum circuit with 16 qubits and 16 classical bits
+    qc = QuantumCircuit(n_qubits, n_qubits)
 
+    # Apply Hadamard gate to all qubits
+    qc.h(range(n_qubits))
 
-2. Code – With Comments and Explanation
-import pandas as pd
-import json
+    # Measure all qubits and store results in classical bits
+    qc.measure(range(n_qubits), range(n_qubits))
 
-# 1. Load data from CSV, Excel and JSON files
+    # Create a quantum simulator
+    simulator = AerSimulator()
 
-df_transactions = pd.read_csv("sales_transactions.csv")
+    # Compile the quantum circuit for the simulator
+    compiled_circuit = transpile(qc, simulator)
 
-df_catalog = pd.read_excel("product_catalog.xlsx", sheet_name="Products")
+    # Execute the circuit for the specified number of shots
+    job = simulator.run(compiled_circuit, shots=shots, memory=True)
 
-df_feedback = pd.read_json("customer_feedback.json")
+    # Get the execution result
+    result = job.result()
 
+    # Extract binary measurement results
+    bitstrings = result.get_memory()
 
-# 2. Data Cleaning and Type Conversion
-
-# Convert Date column into datetime format
-df_transactions["Date"] = pd.to_datetime(df_transactions["Date"])
-
-# Convert Quantity into numeric format
-df_transactions["Quantity"] = pd.to_numeric(
-    df_transactions["Quantity"], errors="coerce"
-)
-
-# Convert UnitPrice into numeric format
-df_transactions["UnitPrice"] = pd.to_numeric(
-    df_transactions["UnitPrice"], errors="coerce"
-)
-
-
-# 3. Transform and Merge Data
-
-# Merge transactions with product catalog
-df_merged = df_transactions.merge(
-    df_catalog, on="ProductID", how="left"
-)
-
-# Merge the result with customer feedback
-df_merged = df_merged.merge(
-    df_feedback, on="TransactionID", how="left"
-)
+    # Return circuit and generated random numbers
+    return qc, bitstrings
 
 
-# 4. Feature Calculations
+# Generate 5 random 16-bit numbers
+qc, random_bitstrings = generate_16bit_qrng(shots=5)
 
-# Calculate Gross Revenue
-df_merged["GrossRevenue"] = (
-    df_merged["Quantity"] * df_merged["UnitPrice"]
-)
+# Display generated random numbers
+print("--- Generated 16-bit Quantum Random Numbers ---")
 
-# Replace missing discount values with zero
-df_merged["DiscountPct"] = df_merged["DiscountPct"].fillna(0.0)
+# Convert each binary number into decimal and hexadecimal
+for i, bitstring in enumerate(random_bitstrings, 1):
 
-# Calculate Net Revenue after discount
-df_merged["NetRevenue"] = (
-    df_merged["GrossRevenue"] * (1 - df_merged["DiscountPct"])
-)
+    # Convert binary into decimal
+    decimal_val = int(bitstring, 2)
 
+    # Convert decimal into hexadecimal
+    hex_val = hex(decimal_val).upper()
 
-# 5. Business Analytics
-
-print("=== MERGED & PROCESSED SALES DATA ===")
-
-# Select required columns for displaying results
-cols_to_show = [
-    "TransactionID",
-    "ProductName",
-    "Category",
-    "Quantity",
-    "GrossRevenue",
-    "NetRevenue",
-    "PaymentMode"
-]
-
-print(df_merged[cols_to_show].to_string(index=False))
-
-
-# Group data according to Region
-print("\n--- Summary by Region ---")
-
-# Calculate total orders, net revenue and average rating
-regional_summary = df_merged.groupby("Region").agg(
-    TotalOrders=("TransactionID", "count"),
-    TotalNetRevenue=("NetRevenue", "sum"),
-    AvgRating=("CustomerRating", "mean")
-).reset_index()
-
-# Display regional summary
-print(regional_summary.to_string(index=False))
-
-
-# 6. Save Unified Dataset to CSV
-
-df_merged.to_csv("unified_sales_analysis.csv", index=False)
-Explanation of Important Concepts
-Code / Function	Explanation
-pd.read_csv()	Reads data from a CSV file.
-pd.read_excel()	Reads data from an Excel file.
-pd.read_json()	Reads data from a JSON file.
-pd.to_datetime()	Converts data into date format.
-pd.to_numeric()	Converts values into numeric format.
-errors="coerce"	Converts invalid values into NaN.
-merge()	Combines two DataFrames.
-how="left"	Keeps all records from the left DataFrame.
-fillna(0.0)	Replaces missing values with zero.
-groupby()	Groups data based on a column.
-agg()	Performs aggregate calculations.
-to_string()	Displays DataFrame as formatted text.
-to_csv()	Saves the DataFrame into a CSV file.
-Important formula:
-Gross Revenue:
-\[ GrossRevenue = Quantity \times UnitPrice \]
-Net Revenue:
-\[ NetRevenue = GrossRevenue \times (1-DiscountPct) \]
-Here, DiscountPct is assumed to be in decimal form. For example, 10% is represented as 0.10.
-3. Expected Output
-=== MERGED & PROCESSED SALES DATA ===
-
-TransactionID ProductName                 Category  Quantity  GrossRevenue  NetRevenue PaymentMode
-
-101           Wireless Mouse Accessories  2         31.0      29.45        Credit Card
-102           Mechanical Keyboard Peripherals 1      25.0      22.50        UPI
-103           Wireless Mouse Accessories  5         77.5      77.50        Debit Card
-104           USB-C Dock Hardware         2         100.0     85.00        UPI
-
-
---- Summary by Region ---
-
-Region  TotalOrders  TotalNetRevenue  AvgRating
-
-East       1            85.00          4.0
-North      2            106.95         4.0
-South      1            22.50          5.0
-Output is based on the sample output in your supplied assignment image. Exact formatting depends on the dataset and pandas version.
-
-
-
-4. SPPU Practical Viva Questions and Answers
-These questions cover the oral questions given in your manual (page 13), along with additional questions directly related to the program and its concepts.
-A. Basic Questions
-Q1. What is Data Visualization?
-Answer: Data Visualization is the process of representing data in graphical formats like charts, graphs and plots to understand information easily.
-Q2. What are the different methods used in Data Visualization?
-Answer:
-1.	Bar Chart
-2.	Pie Chart
-3.	Line Chart
-4.	Histogram
-5.	Scatter Plot
-6.	Box Plot
-Q3. What is Data Analysis?
-Answer: Data Analysis is the process of collecting, cleaning and processing raw data to extract useful information and make better decisions.
-Q4. What is Data Cleaning?
-Answer: Data Cleaning is the process of identifying and correcting incorrect, missing, duplicate or inconsistent data.
-Q5. What is Data Transformation?
-Answer: Data Transformation is the process of converting data from one format or structure into another suitable format for analysis.
-B. Python and Pandas Questions
-Q6. What is Pandas?
-Answer: Pandas is an open-source Python library used for data manipulation, cleaning and analysis.
-Q7. What is a DataFrame?
-Answer: A DataFrame is a two-dimensional tabular data structure containing rows and columns, similar to an Excel spreadsheet.
-Q8. Why do we use import pandas as pd?
-Answer: It imports the Pandas library and gives it a short name pd, which makes it easier to use its functions.
-Q9. What is the difference between CSV, Excel and JSON?
-Answer:
-•	CSV: Stores tabular data in comma-separated text format.
-•	Excel: Stores spreadsheet data in workbook and worksheet format.
-•	JSON: Stores data in key-value pairs and structured objects.
-Q10. What is the use of read_csv()?
-Answer: It is used to read data from a CSV file and load it into a Pandas DataFrame.
-Q11. What is the use of read_excel()?
-Answer: It is used to read data from Excel files.
-Q12. What is the use of read_json()?
-Answer: It is used to read JSON data into a Pandas DataFrame.
-C. Data Cleaning and Transformation
-Q13. What is a missing value?
-Answer: A missing value is a data entry that is empty or unavailable. In Pandas, it is generally represented as NaN.
-Q14. What is the use of fillna()?
-Answer: It replaces missing values with a specified value, such as zero or the mean.
-Q15. What is the use of to_datetime()?
-Answer: It converts a column into a proper date and time format.
-Q16. What is the use of to_numeric()?
-Answer: It converts a column into numeric values such as integers or floating-point numbers.
-Q17. What is errors="coerce"?
-Answer: It converts invalid values into NaN instead of generating an error.
-Q18. What is Data Merging?
-Answer: Data Merging is the process of combining two or more datasets using a common column.
-Q19. What is the difference between inner join and left join?
-Answer:
-•	Inner Join: Returns only matching records from both datasets.
-•	Left Join: Returns all records from the left dataset and matching records from the right dataset.
-Q20. What is the use of groupby()?
-Answer: It groups records based on a particular column so that we can perform calculations on each group.
-D. Business Analytics and Output
-Q21. What is Gross Revenue?
-Answer: Gross Revenue is the total amount before applying discounts.
-Q22. What is Net Revenue?
-Answer: Net Revenue is the final amount after deducting discounts.
-Q23. Why do we use agg()?
-Answer: The agg() function is used to perform multiple aggregate operations like sum, count and mean on grouped data.
-Q24. What is the use of reset_index()?
-Answer: It converts the grouped index back into a normal column in the DataFrame.
-Q25. Why do we use to_csv()?
-Answer: It saves the processed DataFrame into a CSV file for future use.
-Q26. What is the difference between count() and sum()?
-Answer:
-•	count() counts non-missing values.
-•	sum() calculates the total of numeric values.
-Q27. Why do we use index=False?
-Answer: It prevents Pandas from saving the DataFrame index as an additional column in the CSV file.
-
-
-5. Practical Execution – Important Points
-Before running the program, keep these three files in the same working directory as your Python program:
-sales_transactions.csv
-product_catalog.xlsx
-customer_feedback.json
-Install the required libraries if they are not already installed:
-pip install pandas openpyxl
-After successful execution, the following output file will be generated:
-unified_sales_analysis.csv
-One important viva point: The program merges three different file formats into one DataFrame, performs data cleaning and revenue calculations, generates a regional summary, and saves the unified dataset.
-Assignment 1 completed.
-I will follow the same structure for Assignment 2 onwards, using the official assignment number and title from your uploaded manual. 
-DMV Lab Manual.pdf
+    print(f"Sample {i}:")
+    print(f" Binary : {bitstring}")
+    print(f" Hex : {hex_val}")
+    print(f" Decimal: {decimal_val}\n")
+B. Explanation of important lines
+1. Import libraries
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+•	QuantumCircuit: Creates a quantum circuit.
+•	transpile: Converts the circuit into instructions suitable for the selected simulator.
+•	AerSimulator: Simulates quantum circuits locally.
+2. Initialize qubits
+n_qubits = 16
+qc = QuantumCircuit(n_qubits, n_qubits)
+Creates a quantum circuit containing:
+•	16 quantum bits (qubits).
+•	16 classical bits (to store measurement results).
+3. Apply Hadamard gate
+qc.h(range(n_qubits))
+Applies the Hadamard gate to all 16 qubits.
+It puts each qubit into an equal superposition of 0 and 1.
+Therefore, each qubit has a 50% probability of measuring 0 and a 50% probability of measuring 1.
+4. Measure qubits
+qc.measure(range(n_qubits), range(n_qubits))
+Measures all 16 qubits and stores their results in the corresponding classical bits.
+Measurement converts the quantum state into classical binary results.
+5. Create simulator
+simulator = AerSimulator()
+Creates a local quantum simulator to execute the quantum circuit.
+6. Transpile circuit
+compiled_circuit = transpile(qc, simulator)
+Converts the quantum circuit into a format supported by the simulator.
+7. Execute circuit
+job = simulator.run(compiled_circuit, shots=shots, memory=True)
+Executes the circuit.
+•	shots=5 means the circuit runs five times.
+•	memory=True stores the individual measurement results.
+8. Get results
+result = job.result()
+bitstrings = result.get_memory()
+Extracts the individual binary outputs generated by the quantum simulator.
+9. Binary to decimal conversion
+decimal_val = int(bitstring, 2)
+Converts the binary number into decimal.
+Here, 2 represents the binary number system.
+10. Decimal to hexadecimal conversion
+hex_val = hex(decimal_val).upper()
+Converts the decimal number into hexadecimal and changes the letters to uppercase.
+C. Overall working of the program
+Initialize 16 Qubits and 16 Classical Bits
+Apply Hadamard Gate
+Creates superposition
+Measure All Qubits
+Execute Using AerSimulator
+5 shots
+Extract Binary Numbers
+Display Binary, Decimal and Hexadecimal
+PART 3 — SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+These questions include the oral questions listed in your lab manual (page 7), along with additional relevant questions about the program.
+A. Basic Quantum Computing Questions
+Q1. What is a Qubit?
+Ans: A qubit is the basic unit of quantum computing. Unlike a classical bit, which can be either 0 or 1, a qubit can exist in a superposition of both states.
+Q2. What is Quantum Computing?
+Ans: Quantum computing is a type of computing that uses quantum bits and quantum principles to perform computations.
+Q3. What is the difference between a bit and a qubit?
+Ans:
+Classical Bit	Qubit
+Stores 0 or 1	Can exist in superposition
+Used in classical computers	Used in quantum computers
+Classical operations	Quantum gates
+Q4. What is a Quantum Circuit?
+Ans: A quantum circuit is a sequence of quantum gates applied to qubits to perform a quantum computation.
+Q5. What are the different types of registers?
+Ans: There are two main types:
+1.	Quantum Register: Stores qubits.
+2.	Classical Register: Stores measurement results in classical bits.
+Q6. What is a Hadamard Gate?
+Ans: A Hadamard gate is a quantum gate that creates an equal superposition of 0 and 1 when applied to a qubit initially in state 0.
+Q7. What is Superposition?
+Ans: Superposition is a quantum property in which a qubit can exist in a combination of the states 0 and 1 until measured.
+Q8. How do you measure a qubit?
+Ans: We use the measurement operation to convert the quantum state into a classical result, either 0 or 1.
+B. Questions Related to the Program
+Q9. What is the objective of this assignment?
+Ans: To generate 16-bit random numbers using a quantum circuit and Hadamard gates.
+Q10. Which library is used in this program?
+Ans: We use Qiskit and Qiskit Aer.
+Q11. What is Qiskit?
+Ans: Qiskit is an open-source Python framework used to create, simulate and execute quantum circuits.
+Q12. What is AerSimulator?
+Ans: AerSimulator is a local simulator provided by Qiskit Aer that executes quantum circuits.
+Q13. Why do we use 16 qubits?
+Ans: We use 16 qubits to generate a 16-bit binary random number.
+Q14. Why do we use 16 classical bits?
+Ans: We use 16 classical bits to store the measurement results of the 16 qubits.
+Q15. Why is the Hadamard gate used in this program?
+Ans: It is used to put all qubits into equal superposition, giving each qubit an equal probability of measuring 0 or 1.
+Q16. What does shots=5 mean?
+Ans: It means the quantum circuit is executed five times, generating five measurement samples.
+Q17. What is the purpose of transpile()?
+Ans: It converts the quantum circuit into instructions supported by the selected backend.
+Q18. What is measurement in quantum computing?
+Ans: Measurement is the process of observing a qubit and obtaining a classical result, either 0 or 1.
+Q19. What does get_memory() do?
+Ans: It returns the individual measurement results obtained from each shot.
+Q20. What is a binary number?
+Ans: A binary number is a number represented using only two digits, 0 and 1.
+Q21. What is hexadecimal?
+Ans: Hexadecimal is a number system with base 16. It uses digits 0–9 and letters A–F.
+Q22. Why do we convert binary into decimal?
+Ans: To represent the generated binary random number in a commonly used number format.
+Q23. Can this program generate different random numbers every time?
+Ans: Yes. Each execution can produce different measurement results because quantum measurement is probabilistic.
+Q24. What is the maximum decimal value of a 16-bit unsigned number?
+Ans: 65535.
+Formula:
+\[ 2^{16}-1=65535 \]
+Q25. What happens if we increase shots from 5 to 100?
+Ans: The circuit executes 100 times and generates 100 measurement samples instead of 5.
+C. Important Conceptual Viva Questions
+Q26. What is the difference between a quantum simulator and a real quantum computer?
+Ans: A simulator runs quantum circuit models on classical hardware, whereas a real quantum computer uses physical qubits to perform quantum operations.
+Q27. What is quantum randomness?
+Ans: Quantum randomness is randomness obtained from the probabilistic outcomes of quantum measurements.
+Q28. What is the probability of getting 0 or 1 after applying a Hadamard gate to |0⟩?
+Ans: Both outcomes have a 50% probability.
+Q29. How many possible combinations can 16 qubits generate?
+Ans:
+\[ 2^{16}=65536 \]
+Q30. What is the difference between superposition and measurement?
+Ans:
+•	Superposition: A qubit exists in a combination of quantum states.
+•	Measurement: The qubit produces a classical outcome, either 0 or 1.
+Important practical examination preparation
+Must prepare
+Learn these 8 questions properly before your practical:
+1.	What is a qubit?
+2.	What is a Hadamard gate?
+3.	What is superposition?
+4.	What are quantum and classical registers?
+5.	Why are 16 qubits used?
+6.	What is the purpose of measurement?
+7.	What does shots=5 mean?
+8.	What is the difference between a quantum simulator and a real quantum computer?
+Remember this one-line explanation for the examiner:
+"We create a quantum circuit with 16 qubits, apply Hadamard gates to put them into superposition, measure all qubits, and use the AerSimulator to generate five 16-bit random numbers. Finally, we convert the binary results into decimal and hexadecimal formats."
+Reference: Your QAI Lab Manual, Assignment 1, pages 6–8; supplied Assignment 1 code PDF, pages 1–2.
+Note: The binary values will generally differ each time you execute the program. The output shown in your PDF is a sample output, not a fixed result.
 

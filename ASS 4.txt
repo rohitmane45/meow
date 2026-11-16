@@ -1,456 +1,367 @@
-Assignment 4 – Real Estate Price Data Cleaning and Feature Engineering
-Assignment number: 04 | Dataset: RealEstate_Prices.csv
+QAI ASSIGNMENT 4: Tackle Noise with Error Correction
+Topic: 3-Qubit Bit-Flip Quantum Error Correction (QEC)
+This assignment demonstrates how quantum error correction detects and corrects a bit-flip error using three physical qubits and two ancilla qubits. The supplied PDF contains the implementation and sample output. 
+QAI - 4.pdf
+I'll follow the same three-part format:
+1.	Plain code without comments.
+2.	Commented code with simple explanations.
+3.	Practical viva questions and answers.
+==========================================================================================
+PART 1: Plain code (without comments)
+Copy this version directly into your Python file or TXT notes.
 
-Problem Statement: To perform data cleaning and preprocessing on a real estate dataset by handling duplicate records, imputing missing values, detecting outliers, encoding categorical variables and creating new features for real estate price analysis.
-
-Note: The provided manual specifies Assignment 4 but does not show a separate official title. The title above describes the actual practical.
-===============================================================================
-1. Python Code – Without Comments
-import pandas as pd
 import numpy as np
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+from qiskit_aer import AerSimulator
 
-# 1. Load Real Estate Dataset
-df = pd.read_csv("RealEstate_Prices.csv")
+def run_bit_flip_qec_experiment(error_prob=0.15, shots=4000):
 
-print("=== INITIAL DATA AUDIT ===")
-print("Initial Dimensions:", df.shape)
-print("Missing Values:\n", df.isnull().sum())
-print("Duplicate Rows:", df.duplicated().sum())
+    data = QuantumRegister(3, name="data")
+    ancilla = QuantumRegister(2, name="ancilla")
+    syn_reg = ClassicalRegister(2, name="syndrome")
+    res_reg = ClassicalRegister(1, name="result")
 
+    qc = QuantumCircuit(data, ancilla, syn_reg, res_reg)
 
-# 2. Duplicate Handling
-df.drop_duplicates(inplace=True)
+    qc.ry(np.pi / 3, data[0])
+    qc.barrier(label="Prep")
 
+    qc.cx(data[0], data[1])
+    qc.cx(data[0], data[2])
+    qc.barrier(label="Encode")
 
-# 3. Missing Value Imputation
+    qc.x(data[1])
+    qc.barrier(label="BitFlip")
 
-df["Area_SqFt"] = df["Area_SqFt"].fillna(
-    df["Area_SqFt"].median()
-)
+    qc.cx(data[0], ancilla[0])
+    qc.cx(data[1], ancilla[0])
 
-df["Furnishing"] = df["Furnishing"].fillna(
-    df["Furnishing"].mode()[0]
-)
+    qc.cx(data[1], ancilla[1])
+    qc.cx(data[2], ancilla[1])
 
+    qc.measure(ancilla[0], syn_reg[0])
+    qc.measure(ancilla[1], syn_reg[1])
+    qc.barrier(label="Syndrome")
 
-# 4. Outlier Detection and Treatment (IQR on Price)
+    with qc.if_test((syn_reg, 1)):
+        qc.x(data[0])
 
-Q1 = df["Price"].quantile(0.25)
-Q3 = df["Price"].quantile(0.75)
+    with qc.if_test((syn_reg, 3)):
+        qc.x(data[1])
 
-IQR = Q3 - Q1
+    with qc.if_test((syn_reg, 2)):
+        qc.x(data[2])
 
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
+    qc.barrier(label="Correction")
 
-outlier_mask = (
-    (df["Price"] < max(0, lower_bound)) |
-    (df["Price"] > upper_bound)
-)
+    qc.cx(data[0], data[1])
+    qc.cx(data[0], data[2])
+    qc.measure(data[0], res_reg[0])
 
-print(f"\nOutlier records detected in Price: {outlier_mask.sum()}")
-
-df_clean = df[
-    (df["Price"] > 0) &
-    (df["Price"] <= upper_bound)
-].copy()
-
-
-# 5. Categorical Encoding
-
-furnishing_hierarchy = {
-    "Unfurnished": 0,
-    "Semi-Furnished": 1,
-    "Furnished": 2
-}
-
-df_clean["Furnishing_Code"] = df_clean["Furnishing"].map(
-    furnishing_hierarchy
-)
-
-df_prepared = pd.get_dummies(
-    df_clean,
-    columns=["Location"],
-    drop_first=True
-)
+    return qc
 
 
-# 6. Feature Engineering
+qc = run_bit_flip_qec_experiment()
 
-df_prepared["Price_Per_SqFt"] = np.round(
-    df_prepared["Price"] / df_prepared["Area_SqFt"],
-    2
-)
+simulator = AerSimulator()
+compiled_qc = transpile(qc, simulator)
+job = simulator.run(compiled_qc, shots=4000)
+counts = job.result().get_counts()
 
+logical_counts = {"0": 0, "1": 0}
+syndrome_stats = {}
 
-print("\n=== PREPARED DATASET OVERVIEW ===")
+for bitstring, count in counts.items():
+    parts = bitstring.split()
+    res_bit = parts[0]
+    syn = parts[1]
 
-print("Final Cleaned Dimensions:", df_prepared.shape)
+    logical_counts[res_bit] += count
+    syndrome_stats[syn] = syndrome_stats.get(syn, 0) + count
 
-display_cols = [
-    "Property_ID",
-    "Area_SqFt",
-    "Bedrooms",
-    "Furnishing_Code",
-    "Price",
-    "Price_Per_SqFt",
-    "Location_Suburban",
-    "Location_Urban"
-]
+print("--- 3-Qubit QEC Circuit ---")
+print(qc.draw(output="text"))
 
-print(df_prepared[display_cols].head())
-========================================================================================================
+print("\n--- Syndrome Measurement Detected ---")
+for syn, c in syndrome_stats.items():
+    print(f"Syndrome (s1s0 = {syn}): {c} occurrences (Error identified on data[1])")
 
-2. Python Code – With Comments and Explanation
-# Import required libraries
+print("\n--- Corrected Logical State Measurement ---")
+p0 = logical_counts['0'] / 4000
+p1 = logical_counts['1'] / 4000
 
-import pandas as pd
+print(f"Logical |0_L>: {logical_counts['0']} shots ({p0 * 100:.2f}%)")
+print(f"Logical |1_L>: {logical_counts['1']} shots ({p1 * 100:.2f}%)")
+print("Target Theory : P(|0_L|) = 75.00%, P(|1_L|) = 25.00%")
+Compatibility note: Your PDF uses the older .c_if() syntax. I have replaced it with Qiskit's if_test() conditional blocks for newer Qiskit versions. The correction logic is unchanged.
+===================================================================
+PART 2: Code with comments and explanations
+1. Import libraries
 import numpy as np
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+from qiskit_aer import AerSimulator
+•	numpy: Used for mathematical calculations such as π.
+•	QuantumCircuit: Creates a quantum circuit.
+•	QuantumRegister: Creates quantum registers.
+•	ClassicalRegister: Stores measurement results.
+•	transpile: Converts the circuit into a form suitable for the simulator.
+•	AerSimulator: Simulates the quantum circuit.
+2. Define the function
+def run_bit_flip_qec_experiment(error_prob=0.15, shots=4000):
+•	Defines the main function.
+•	error_prob is present in the original function signature.
+•	shots=4000 means the circuit is executed 4,000 times.
+Important: In the supplied implementation, error_prob is not actually used to generate random errors.
+3. Define quantum and classical registers
+data = QuantumRegister(3, name="data")
+ancilla = QuantumRegister(2, name="ancilla")
+
+syn_reg = ClassicalRegister(2, name="syndrome")
+res_reg = ClassicalRegister(1, name="result")
+
+qc = QuantumCircuit(data, ancilla, syn_reg, res_reg)
+We create:
+•	3 data qubits: Store the encoded quantum information.
+•	2 ancilla qubits: Help detect errors.
+•	2 classical bits: Store the error syndrome.
+•	1 classical bit: Store the final logical measurement.
+Why three data qubits?
+Because the three-qubit repetition code stores one logical qubit across three physical qubits. It can detect and correct a single bit-flip error.
+4. State preparation
+qc.ry(np.pi / 3, data[0])
+qc.barrier(label="Prep")
+The RY gate rotates the first qubit around the Y-axis.
+It prepares the state:
+\[ |\psi\rangle = \cos(\pi/6)|0\rangle+ \sin(\pi/6)|1\rangle \]
+Therefore:
+\[ P(0)=75\%,\qquad P(1)=25\% \]
+The barrier separates the preparation stage from the next stage.
+5. Encoding
+qc.cx(data[0], data[1])
+qc.cx(data[0], data[2])
+qc.barrier(label="Encode")
+Here, we use two CNOT gates to encode the original state into three qubits.
+The encoded state becomes:
+\[ |\psi_L\rangle = \alpha|000\rangle+\beta|111\rangle \]
+Simple explanation: Instead of storing information in one qubit, we distribute it across three qubits.
+6. Introduce bit-flip error
+qc.x(data[1])
+qc.barrier(label="BitFlip")
+The X gate flips the state of the second data qubit.
+For example:
+•	\(|0\rangle\) becomes \(|1\rangle\).
+•	\(|1\rangle\) becomes \(|0\rangle\).
+This deliberately introduces an error on data[1].
+7. Syndrome extraction
+qc.cx(data[0], ancilla[0])
+qc.cx(data[1], ancilla[0])
+
+qc.cx(data[1], ancilla[1])
+qc.cx(data[2], ancilla[1])
+The two ancilla qubits check the parity between pairs of data qubits.
+•	Ancilla 0 checks data[0] and data[1].
+•	Ancilla 1 checks data[1] and data[2].
+Next, measure the ancilla qubits:
+qc.measure(ancilla[0], syn_reg[0])
+qc.measure(ancilla[1], syn_reg[1])
+qc.barrier(label="Syndrome")
+The measurement results form a two-bit syndrome.
+What is a syndrome?
+A syndrome is a set of measurement results that helps identify whether an error occurred and where it occurred.
+8. Active error correction
+with qc.if_test((syn_reg, 1)):
+    qc.x(data[0])
+
+with qc.if_test((syn_reg, 3)):
+    qc.x(data[1])
+
+with qc.if_test((syn_reg, 2)):
+    qc.x(data[2])
+The program checks the syndrome and applies an X gate to the affected qubit.
+Syndrome (s1s0)	Meaning	Correction
+00	No error	No correction
+01	Error on data[0]	Apply X to data[0]
+11	Error on data[1]	Apply X to data[1]
+10	Error on data[2]	Apply X to data[2]
+In our experiment, the X gate was deliberately applied to data[1].
+Therefore, the expected syndrome is 11, and the program applies another X gate to data[1] to correct the error.
+9. Decoding and final measurement
+qc.cx(data[0], data[1])
+qc.cx(data[0], data[2])
+
+qc.measure(data[0], res_reg[0])
+•	The CNOT gates decode the logical state.
+•	The first data qubit is measured.
+•	The final measurement helps us check whether the original probability distribution has been recovered.
+10. Execute the circuit
+qc = run_bit_flip_qec_experiment()
+
+simulator = AerSimulator()
+compiled_qc = transpile(qc, simulator)
+
+job = simulator.run(compiled_qc, shots=4000)
+counts = job.result().get_counts()
+•	Creates the circuit.
+•	Initializes the simulator.
+•	Transpiles the circuit.
+•	Executes it 4,000 times.
+•	Collects the measurement counts.
+11. Process the output
+logical_counts = {"0": 0, "1": 0}
+syndrome_stats = {}
+
+for bitstring, count in counts.items():
+    parts = bitstring.split()
+
+    res_bit = parts[0]
+    syn = parts[1]
+
+    logical_counts[res_bit] += count
+    syndrome_stats[syn] = syndrome_stats.get(syn, 0) + count
+This section separates the final logical measurement from the syndrome measurement.
+•	logical_counts: Counts the final 0 and 1 results.
+•	syndrome_stats: Counts how frequently each syndrome appears.
+12. Calculate probabilities
+p0 = logical_counts['0'] / 4000
+p1 = logical_counts['1'] / 4000
+We divide the number of occurrences by total shots to calculate probabilities.
+For example:
+\[ P(0)=\frac{\text{Number of 0 results}}{4000} \]
+\[ P(1)=\frac{\text{Number of 1 results}}{4000} \]
+PART 3: Expected output
+The output in your PDF is:
+--- Syndrome Measurement Detected ---
+Syndrome (s1s0 = 11): 4000 occurrences (Error identified on data[1])
+
+--- Corrected Logical State Measurement ---
+Logical |0_L>: 2994 shots (74.85%)
+Logical |1_L>: 1006 shots (25.15%)
+Target Theory : P(|0_L|) = 75.00%, P(|1_L|) = 25.00%
+Result
+The observed probabilities are close to the theoretical probabilities of 75% and 25%. 
+QAI - 4.pdf
+Why are the values not exactly 75% and 25%?
+Because the simulation samples measurement outcomes. Small statistical variations are normal when using a finite number of shots.
+Important observation about your PDF: It imports NoiseModel and pauli_error, but does not use them. The code applies a deliberate X gate to data[1]; it does not apply a stochastic noise model. So the experiment demonstrates correction of a deliberately introduced bit-flip error, not a randomly generated noise probability of 0.15.
+========================================================================================
+PART 4: Practical viva questions and answers
+These are focused on the actual concepts and code used in this assignment.
+Basic concepts
+Q1. What is Quantum Error Correction?
+Quantum Error Correction is a technique used to detect and correct errors in quantum information caused by noise or unwanted changes.
+Q2. Why do we need quantum error correction?
+Quantum computers are sensitive to noise. Even small disturbances can change qubit states and produce incorrect results.
+Q3. What is a bit-flip error?
+A bit-flip error changes:
+•	\(|0\rangle\) into \(|1\rangle\).
+•	\(|1\rangle\) into \(|0\rangle\).
+Q4. Which quantum gate is used to create a bit-flip error?
+The Pauli-X gate.
+Q5. What is the purpose of the three-qubit repetition code?
+It stores one logical qubit across three physical qubits so that a single bit-flip error can be detected and corrected.
+Q6. What is a logical qubit?
+A logical qubit is quantum information encoded across multiple physical qubits.
+Q7. What are physical qubits?
+Physical qubits are the actual individual qubits used to represent and process quantum information.
+Q8. What is an ancilla qubit?
+An ancilla qubit is an additional qubit used to help perform operations such as error detection.
+Q9. What is a syndrome?
+A syndrome is the measurement result used to identify the type or location of an error.
+Q10. How many data qubits are used in this assignment?
+Three data qubits.
+Q11. How many ancilla qubits are used?
+Two ancilla qubits.
+Q12. How many classical bits are used for syndrome measurement?
+Two classical bits.
+Questions related to the code
+Q13. What is the purpose of the RY gate?
+It rotates a qubit around the Y-axis and prepares a superposition state.
+Q14. Why is np.pi / 3 used?
+It represents an angle of 60 degrees in radians.
+Q15. What is the purpose of the CNOT gate?
+A CNOT gate flips the target qubit when the control qubit is 1.
+Q16. Why are two CNOT gates used during encoding?
+To distribute the original quantum information across three data qubits.
+Q17. What is the encoded state?
+\[ |\psi_L\rangle=\alpha|000\rangle+\beta|111\rangle \]
+Q18. Why do we use ancilla qubits?
+To extract parity information and identify errors without directly measuring the encoded data qubits.
+Q19. What is parity?
+Parity tells us whether two bits are equal or different.
+Q20. What is the purpose of qc.barrier()?
+It separates different circuit stages and helps organize the circuit.
+Q21. What is if_test() used for?
+It executes a quantum operation only when a specified classical condition is satisfied.
+Q22. Why do we apply X again during correction?
+Because applying X twice returns the qubit to its original state:
+\[ X \times X = I \]
+Q23. What is the purpose of transpile()?
+It converts the quantum circuit into a form suitable for execution on the selected backend.
+Q24. What is AerSimulator()?
+It is a Qiskit simulator used to execute quantum circuits on a classical computer.
+Q25. What does shots=4000 mean?
+The circuit is executed 4,000 times to collect measurement statistics.
+Syndrome and error correction
+Q26. What are the four possible syndromes?
+•	00: No error.
+•	01: Error on data[0].
+•	11: Error on data[1].
+•	10: Error on data[2].
+Q27. What syndrome is generated when data[1] has a bit-flip error?
+11.
+Q28. How does the program identify the error on data[1]?
+Both parity checks detect a mismatch, producing syndrome 11.
+Q29. Which gate corrects the error on data[1]?
+The Pauli-X gate applied to data[1].
+Q30. Can this three-qubit code correct two bit-flip errors?
+No. It is designed to correct a single bit-flip error. Two errors can cause incorrect decoding.
+Advanced practical questions
+Q31. What is the difference between error detection and error correction?
+Error detection identifies that an error has occurred. Error correction identifies the error and applies an operation to recover the information.
+Q32. Does quantum error correction directly copy a qubit three times?
+No. The quantum no-cloning theorem prevents copying an arbitrary unknown quantum state. The repetition code uses entanglement to encode the information.
+Q33. What is the difference between bit-flip and phase-flip errors?
+•	Bit-flip error: Changes \(|0\rangle\) to \(|1\rangle\) or vice versa.
+•	Phase-flip error: Changes the relative phase of a quantum state.
+Q34. Can this code correct phase-flip errors?
+Not by itself. This basic repetition code is designed to correct bit-flip errors.
+Q35. What is the role of error_prob=0.15 in this program?
+It is a function parameter intended to represent an error probability. However, the supplied code does not use it to introduce stochastic errors.
+Q36. What is the role of NoiseModel and pauli_error?
+They are Qiskit Aer tools for defining noise models and Pauli error channels. They are imported in this PDF but are not actually used in the experiment.
+Q37. Why is the final output approximately 75% and 25%?
+Because the original state was prepared with those theoretical measurement probabilities, and the bit-flip error was corrected.
+Q38. What happens if no error occurs?
+The syndrome is 00, and no correction gate is applied.
+Q39. What is the purpose of decoding?
+Decoding reverses the encoding operations to recover the logical information in the original data qubit.
+Q40. What is the main objective of this assignment?
+To demonstrate how a three-qubit repetition code detects a single bit-flip error using syndrome measurement and corrects it using conditional X gates.
+==================================================================================================================================
+PART 5: One-minute explanation for the practical exam
+If your examiner asks, "Explain your assignment," you can answer:
+"This assignment implements a three-qubit quantum error correction technique to detect and correct bit-flip errors.
+First, I prepare a quantum state using the RY gate. Then I encode that state into three data qubits using CNOT gates.
+After encoding, I intentionally introduce a bit-flip error on the second data qubit using the Pauli-X gate.
+Next, I use two ancilla qubits to perform syndrome extraction. The syndrome helps identify which data qubit has an error.
+In this experiment, the syndrome is 11, which indicates an error on data qubit 1. So, I apply another X gate to correct that error.
+Finally, I decode the circuit, measure the logical qubit and compare the output probabilities with the theoretical values of 75% and 25%.
+The experiment demonstrates the basic working of quantum error detection and correction."
+Quick revision before your practical
+Remember these important points
+Concept	Answer
+Assignment	4
+Technique	Quantum Error Correction
+Error type	Bit-flip
+Data qubits	3
+Ancilla qubits	2
+Encoding gates	CNOT
+Error gate	Pauli-X
+Syndrome	11
+Correction	X on data[1]
+Shots	4000
+Theoretical probabilities	75% and 25%
+Most important viva question: Why is the syndrome 11?
+Because both parity checks detect a mismatch when the middle data qubit, data[1], is flipped.
+Exam tip: Understand the syndrome table and the reason for using ancilla qubits. These are especially important concepts to explain confidently during this practical.
 
-
-# 1. Load Real Estate Dataset
-
-# Read the real estate CSV file
-df = pd.read_csv("RealEstate_Prices.csv")
-
-# Display initial dataset information
-print("=== INITIAL DATA AUDIT ===")
-
-# Display number of rows and columns
-print("Initial Dimensions:", df.shape)
-
-# Count missing values in each column
-print("Missing Values:\n", df.isnull().sum())
-
-# Count duplicate records
-print("Duplicate Rows:", df.duplicated().sum())
-
-
-# 2. Duplicate Handling
-
-# Remove duplicate records from the dataset
-df.drop_duplicates(inplace=True)
-
-
-# 3. Missing Value Imputation
-
-# Replace missing Area_SqFt values with the median
-df["Area_SqFt"] = df["Area_SqFt"].fillna(
-    df["Area_SqFt"].median()
-)
-
-# Replace missing Furnishing values with the mode
-df["Furnishing"] = df["Furnishing"].fillna(
-    df["Furnishing"].mode()[0]
-)
-
-
-# 4. Outlier Detection and Treatment (IQR on Price)
-
-# Calculate first quartile
-Q1 = df["Price"].quantile(0.25)
-
-# Calculate third quartile
-Q3 = df["Price"].quantile(0.75)
-
-# Calculate Interquartile Range
-IQR = Q3 - Q1
-
-# Calculate lower and upper limits
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-
-# Identify outliers in the Price column
-outlier_mask = (
-    (df["Price"] < max(0, lower_bound)) |
-    (df["Price"] > upper_bound)
-)
-
-# Display number of detected outliers
-print(f"\nOutlier records detected in Price: {outlier_mask.sum()}")
-
-# Retain valid positive price records within the upper limit
-df_clean = df[
-    (df["Price"] > 0) &
-    (df["Price"] <= upper_bound)
-].copy()
-
-
-# 5. Categorical Encoding
-
-# Assign numerical values to furnishing categories
-furnishing_hierarchy = {
-    "Unfurnished": 0,
-    "Semi-Furnished": 1,
-    "Furnished": 2
-}
-
-# Convert furnishing categories into numerical values
-df_clean["Furnishing_Code"] = df_clean["Furnishing"].map(
-    furnishing_hierarchy
-)
-
-# Apply One-Hot Encoding to Location
-# drop_first=True removes the first category
-df_prepared = pd.get_dummies(
-    df_clean,
-    columns=["Location"],
-    drop_first=True
-)
-
-
-# 6. Feature Engineering
-
-# Calculate price per square foot
-df_prepared["Price_Per_SqFt"] = np.round(
-    df_prepared["Price"] / df_prepared["Area_SqFt"],
-    2
-)
-
-
-# Display prepared dataset
-
-print("\n=== PREPARED DATASET OVERVIEW ===")
-
-# Display final dataset dimensions
-print("Final Cleaned Dimensions:", df_prepared.shape)
-
-# Select required columns for display
-display_cols = [
-    "Property_ID",
-    "Area_SqFt",
-    "Bedrooms",
-    "Furnishing_Code",
-    "Price",
-    "Price_Per_SqFt",
-    "Location_Suburban",
-    "Location_Urban"
-]
-
-# Display first five records
-print(df_prepared[display_cols].head())
-
-Important Code Explanation
-Function / Concept	Explanation
-pd.read_csv()	Loads the CSV dataset.
-df.shape	Returns the number of rows and columns.
-isnull().sum()	Counts missing values in each column.
-duplicated().sum()	Counts duplicate records.
-drop_duplicates()	Removes duplicate records.
-median()	Calculates the middle value.
-mode()	Finds the most frequently occurring value.
-fillna()	Replaces missing values.
-quantile()	Calculates quartiles.
-IQR	Measures the spread of the middle 50% of data.
-outlier_mask	Identifies records outside specified price limits.
-map()	Converts categorical values into numerical values.
-pd.get_dummies()	Performs One-Hot Encoding.
-np.round()	Rounds numerical values.
-copy()	Creates an independent copy of selected data.
-head()	Displays the first five records.
-
-
-3. Expected Output
-A. Initial Data Audit
-=== INITIAL DATA AUDIT ===
-
-Initial Dimensions: (1004, 6)
-
-Missing Values:
-Property_ID    0
-Area_SqFt      6
-Bedrooms       0
-Location       0
-Furnishing     4
-Price          0
-dtype: int64
-
-Duplicate Rows: 4
-
-Outlier records detected in Price: 15
-
-
-B. Prepared Dataset Overview
-=== PREPARED DATASET OVERVIEW ===
-
-Final Cleaned Dimensions: (988, 9)
-
-
-C. Prepared Dataset Sample
-  Property_ID  Area_SqFt  Bedrooms  Furnishing_Code  Price  Price_Per_SqFt
-
-0 PROP_0001     2048.0       2           2         409000.0     199.71
-1 PROP_0002     1730.0       2           2         342800.0     198.15
-2 PROP_0003     2123.0       3           2         449600.0     211.78
-3 PROP_0004     2561.0       3           1         441000.0     172.20
-4 PROP_0005     1682.0       1           1         269800.0     160.40
-
-
-The location columns Location_Suburban and Location_Urban are also included in the actual output. Values are based on the supplied assignment image.
-
-4. SPPU Practical Viva Questions and Answers
-These questions cover the concepts and Python functions used in Assignment 4.
-A. Basic Data Cleaning Questions
-Q1. What is Data Cleaning?
-
-Answer: Data Cleaning is the process of removing incorrect, duplicate, missing and inconsistent data from a dataset.
-
-Q2. What is Data Preprocessing?
-
-Answer: Data Preprocessing is the process of converting raw data into a clean and structured format before applying machine learning algorithms.
-
-Q3. What is Pandas?
-
-Answer: Pandas is a Python library used for data manipulation, cleaning and analysis.
-
-Q4. What is NumPy?
-
-Answer: NumPy is a Python library used for numerical calculations and mathematical operations.
-
-Q5. What is the use of df.shape?
-
-Answer: It returns the number of rows and columns in a dataset.
-B. Missing Values and Duplicate Handling
-Q6. What are missing values?
-
-Answer: Missing values are data entries that are not available or recorded in a dataset.
-
-Q7. How do you identify missing values?
-
-Answer: We use isnull().sum() to count missing values in each column.
-
-Q8. What is the difference between mean, median and mode?
-
-Answer:
-- Mean: Average of all values.
-- Median: Middle value of sorted data.
-- Mode: Most frequently occurring value.
-Q9. Why do we use median for Area_SqFt?
-
-Answer: Median is less affected by extreme values and is suitable for imputing numerical data.
-
-Q10. Why do we use mode for Furnishing?
-
-Answer: Furnishing is categorical data, so we use the most frequently occurring category to replace missing values.
-
-Q11. What is the use of fillna()?
-
-Answer: It replaces missing values with a specified value.
-
-Q12. What is the use of drop_duplicates()?
-
-Answer: It removes repeated records from the dataset.
-C. Outlier Detection Questions
-Q13. What is an outlier?
-
-Answer: An outlier is a data value that is significantly different from most other observations.
-
-Q14. What is IQR?
-
-Answer: IQR stands for Interquartile Range. It measures the spread of the middle 50% of data.
-\[
-IQR=Q3-Q1
-\]
-
-Q15. What are Q1 and Q3?
-
-Answer:
-- Q1 is the first quartile (25th percentile).
-- Q3 is the third quartile (75th percentile).
-Q16. What is the IQR formula for detecting outliers?
-
-Answer:
-\[
-Lower=Q1-1.5\times IQR
-\]
-
-\[
-Upper=Q3+1.5\times IQR
-\]
-
-Values outside these limits are generally considered outliers.
-
-Q17. Why do we remove outliers?
-
-Answer: Extreme values can affect statistical analysis and certain machine learning algorithms. Removing invalid or extreme values can improve data quality.
-
-Q18. What is the purpose of outlier_mask?
-
-Answer: It identifies records whose prices are below the allowed lower threshold or above the upper IQR limit.
-D. Categorical Encoding Questions
-Q19. What is categorical data?
-
-Answer: Categorical data represents information in the form of groups or labels, such as Furnishing and Location.
-
-Q20. What is Ordinal Encoding?
-
-Answer: Ordinal Encoding converts categorical values into numerical values according to their natural order.
-
-Example:
-Furnishing	Code
-Unfurnished	0
-Semi-Furnished	1
-Furnished	2
-
-Q21. What is One-Hot Encoding?
-
-Answer: One-Hot Encoding converts categorical values into separate binary columns containing 0 and 1.
-
-Q22. What is the difference between Ordinal Encoding and One-Hot Encoding?
-
-Answer:
-Ordinal Encoding	One-Hot Encoding
-Assigns numerical values to categories.	Creates separate binary columns.
-Represents an order.	Does not assume an order.
-Example: Furnishing.	Example: Location.
-
-Q23. What is the use of map()?
-
-Answer: It replaces existing categorical values with corresponding values from a dictionary.
-
-Q24. What is the use of pd.get_dummies()?
-
-Answer: It converts categorical columns into numerical binary columns.
-
-Q25. Why do we use drop_first=True?
-
-Answer: It removes the first dummy variable to avoid redundant columns and the dummy variable trap.
-E. Feature Engineering Questions
-Q26. What is Feature Engineering?
-
-Answer: Feature Engineering is the process of creating new meaningful features from existing dataset columns to improve data analysis and machine learning performance.
-
-Q27. What is Price Per Square Foot?
-
-Answer: It represents the price of a property divided by its total area in square feet.
-\[
-Price\ Per\ SqFt=\frac{Price}{Area\_SqFt}
-\]
-
-Q28. Why is Price_Per_SqFt useful?
-
-Answer: It helps compare property prices fairly, even when properties have different areas.
-
-Q29. What is the use of np.round()?
-
-Answer: It rounds numerical values to a specified number of decimal places.
-
-Q30. What is the use of .copy()?
-
-Answer: It creates a separate copy of the selected dataset instead of working on a view of the original data.
-F. Real Estate Domain Questions
-Q31. What is a real estate dataset?
-
-Answer: A real estate dataset contains property-related information such as price, area, bedrooms, location and furnishing.
-
-Q32. Why is Location important in real estate price prediction?
-
-Answer: Property prices depend heavily on location because facilities, connectivity, demand and surrounding infrastructure differ between areas.
-
-Q33. Why do we need to preprocess real estate data?
-
-Answer: To remove duplicate records, handle missing values, treat outliers and convert categorical information into numerical form.
-
-Q34. What is the final objective of this assignment?
-
-Answer: The objective is to prepare a clean and structured real estate dataset that can be used for further analysis and machine learning applications such as house price prediction.

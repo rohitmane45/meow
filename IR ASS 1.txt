@@ -1,0 +1,263 @@
+IR ASSI 1 – TEXT DOCUMENT PREPROCESSING
+Problem Statement: Write a program for pre-processing of a text document such as stop word removal and stemming.
+________________________________________
+1. PLAIN CODE (WITHOUT COMMENTS)
+import re
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from nltk.stem import PorterStemmer
+
+def preprocess_text(text):
+
+    print("--- 1. Original Raw Text ---")
+    print(text.strip())
+
+    tokens = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+
+    print(f"\n--- 2. Tokens ({len(tokens)} words) ---")
+    print(tokens)
+
+    filtered_tokens = [w for w in tokens if w not in ENGLISH_STOP_WORDS]
+
+    print(f"\n--- 3. After Stop Word Removal ({len(filtered_tokens)} words) ---")
+    print(filtered_tokens)
+
+    stemmer = PorterStemmer()
+    stemmed_tokens = [stemmer.stem(w) for w in filtered_tokens]
+
+    print(f"\n--- 4. After Stemming ({len(stemmed_tokens)} stems) ---")
+    print(stemmed_tokens)
+
+    comparison = [
+        {"Original Token": orig, "Stemmed Root": stem}
+        for orig, stem in zip(filtered_tokens, stemmed_tokens)
+    ]
+
+    return comparison
+
+
+sample_document = """
+Data Science and Machine Learning are transforming modern healthcare!
+
+Doctors are analyzing vast amounts of clinical records, running automated
+diagnostics, and identifying critical heart diseases effectively.
+"""
+
+comparison_table = preprocess_text(sample_document)
+________________________________________
+2. CODE WITH COMMENTS AND EXPLANATION
+# Import required libraries
+import re
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from nltk.stem import PorterStemmer
+
+
+# Function for text preprocessing
+def preprocess_text(text):
+
+    # Display original text
+    print("--- 1. Original Raw Text ---")
+    print(text.strip())
+
+    # Convert text into lowercase and extract alphabetic words
+    tokens = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+
+    print(f"\n--- 2. Tokens ({len(tokens)} words) ---")
+    print(tokens)
+
+    # Remove unnecessary stop words
+    filtered_tokens = [w for w in tokens if w not in ENGLISH_STOP_WORDS]
+
+    print(f"\n--- 3. After Stop Word Removal ({len(filtered_tokens)} words) ---")
+    print(filtered_tokens)
+
+    # Create Porter Stemmer object
+    stemmer = PorterStemmer()
+
+    # Convert words into their root forms
+    stemmed_tokens = [stemmer.stem(w) for w in filtered_tokens]
+
+    print(f"\n--- 4. After Stemming ({len(stemmed_tokens)} stems) ---")
+    print(stemmed_tokens)
+
+    # Create comparison between original words and stemmed words
+    comparison = [
+        {"Original Token": orig, "Stemmed Root": stem}
+        for orig, stem in zip(filtered_tokens, stemmed_tokens)
+    ]
+
+    # Return the comparison list
+    return comparison
+
+
+# Sample input document
+sample_document = """
+Data Science and Machine Learning are transforming modern healthcare!
+
+Doctors are analyzing vast amounts of clinical records, running automated
+diagnostics, and identifying critical heart diseases effectively.
+"""
+
+# Call the preprocessing function
+comparison_table = preprocess_text(sample_document)
+Explanation of the code
+1. Importing Libraries
+•	re: Used for regular expressions and extracting words.
+•	ENGLISH_STOP_WORDS: Contains common English stop words from Scikit-learn.
+•	PorterStemmer: Used to convert words into their root forms.
+2. Creating Function
+def preprocess_text(text):
+Creates a function that accepts a text document as input and performs preprocessing.
+3. Displaying Original Text
+text.strip()
+Removes unnecessary spaces and newline characters from the beginning and end of the text.
+4. Tokenization
+re.findall(r"\b[a-zA-Z]+\b", text.lower())
+•	lower() converts all text into lowercase.
+•	re.findall() extracts matching words.
+•	\b represents a word boundary.
+•	[a-zA-Z]+ matches alphabetic words.
+Example:
+Input: Data Science IS Amazing!
+Output: ['data', 'science', 'is', 'amazing']
+5. Stop Word Removal
+filtered_tokens = [w for w in tokens if w not in ENGLISH_STOP_WORDS]
+Removes common words that usually do not contribute much meaning to information retrieval.
+Example:
+Input: ['data', 'science', 'and', 'machine', 'learning']
+Output: ['data', 'science', 'machine', 'learning']
+6. Stemming
+stemmer = PorterStemmer()
+Creates an object of Porter Stemmer.
+stemmer.stem(w)
+Converts each word into its stem or root form.
+Example:
+•	Learning → learn
+•	Transforming → transform
+•	Diseases → diseas
+•	Doctors → doctor
+7. List Comprehension
+stemmed_tokens = [stemmer.stem(w) for w in filtered_tokens]
+Applies stemming to every word in the filtered list.
+8. Comparison Table
+zip(filtered_tokens, stemmed_tokens)
+Combines original filtered words with their corresponding stemmed words.
+9. Return Statement
+return comparison
+Returns the comparison list containing original words and their stemmed roots.
+10. Function Calling
+comparison_table = preprocess_text(sample_document)
+Passes the sample document to the preprocessing function and stores the returned result.
+________________________________________
+3. SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+A. Basic Assignment Questions
+Q1. What is Natural Language Processing (NLP)?
+Ans: NLP is a branch of Artificial Intelligence that helps computers understand, process and work with human languages.
+Q2. What is text preprocessing?
+Ans: Text preprocessing is the process of cleaning and converting raw text into a structured format before further analysis.
+Q3. Why is text preprocessing required?
+Ans: It removes unnecessary information, reduces noise and improves the quality of text analysis.
+Q4. What are the steps performed in this assignment?
+Ans:
+1.	Lowercase conversion.
+2.	Tokenization.
+3.	Stop word removal.
+4.	Stemming.
+Q5. What is tokenization?
+Ans: Tokenization is the process of splitting text into smaller units called tokens, such as words or sentences.
+Q6. What is a token?
+Ans: A token is an individual unit of text, such as a word or punctuation mark.
+Q7. What is stop word removal?
+Ans: Stop word removal is the process of removing commonly used words like 'is', 'the', 'are' and 'and' that usually carry less useful information.
+Q8. Give examples of stop words.
+Ans: Is, am, are, the, an, a, and, of, in, on.
+Q9. What is stemming?
+Ans: Stemming is the process of reducing a word to its base or root form by removing prefixes or suffixes.
+Example:
+•	Playing → play
+•	Studies → studi
+•	Running → run
+Q10. What is Porter Stemmer?
+Ans: Porter Stemmer is an algorithm used in NLP to reduce words to their stem form by removing common suffixes.
+B. Python Libraries and Functions
+Q11. Which libraries are used in this assignment?
+Ans:
+1.	re
+2.	sklearn
+3.	nltk
+Q12. What is the use of the re library?
+Ans: The re library is used for pattern matching and text processing using regular expressions.
+Q13. What is ENGLISH_STOP_WORDS?
+Ans: It is a predefined collection of common English stop words provided by Scikit-learn.
+Q14. What is NLTK?
+Ans: NLTK stands for Natural Language Toolkit. It is a Python library used for NLP tasks like tokenization, stemming and lemmatization.
+Q15. What is the use of PorterStemmer()?
+Ans: It creates a Porter Stemmer object that is used to convert words into their stem forms.
+Q16. What is the use of lower()?
+Ans: It converts all uppercase letters into lowercase letters.
+Example: HELLO → hello
+Q17. What is the use of findall()?
+Ans: It finds all occurrences of a pattern in a given string and returns them as a list.
+Q18. What is the use of zip()?
+Ans: The zip() function combines corresponding elements from two or more iterables.
+Q19. What is list comprehension?
+Ans: List comprehension is a short way of creating a list using a single line of Python code.
+Q20. What is the use of strip()?
+Ans: It removes leading and trailing whitespace characters from a string.
+C. Important Conceptual Questions
+Q21. What is the difference between stemming and lemmatization?
+Ans:
+Stemming removes word suffixes to obtain a stem, which may not be a meaningful dictionary word.
+Lemmatization converts a word into its meaningful dictionary base form.
+Example:
+•	Stemming: Studies → studi
+•	Lemmatization: Studies → study
+Q22. Is the output of stemming always a meaningful English word?
+Ans: No. Stemming can produce a word that is not grammatically or dictionary-correct.
+Q23. What is the difference between tokenization and stop word removal?
+Ans:
+Tokenization divides text into individual words, whereas stop word removal removes unnecessary common words.
+Q24. What happens if we do not perform text preprocessing?
+Ans: The text may contain unnecessary words, inconsistent formats and noise, which can affect the performance of NLP applications.
+Q25. Where is text preprocessing used in real life?
+Ans:
+1.	Search engines.
+2.	Chatbots.
+3.	Sentiment analysis.
+4.	Spam detection.
+5.	Information retrieval.
+Q26. Can we perform stemming without tokenization?
+Ans: Generally, tokenization is performed first because stemming is applied to individual words.
+Q27. What is the difference between raw text and processed text?
+Ans: Raw text is the original unprocessed text, whereas processed text is cleaned and transformed text ready for analysis.
+Q28. Why do we convert text into lowercase?
+Ans: To maintain uniformity and avoid treating uppercase and lowercase versions of the same word as different words.
+Q29. Does stop word removal always improve results?
+Ans: No. In some applications, stop words are important. For example, removing words like 'not' can change the meaning of a sentence.
+Q30. What is Information Retrieval?
+Ans: Information Retrieval is the process of searching and finding relevant information or documents from a large collection of data.
+D. Practical Execution Questions
+Q31. Which algorithm is used for stemming in this assignment?
+Ans: Porter Stemming Algorithm.
+Q32. Which stop word collection is used in this program?
+Ans: Scikit-learn's ENGLISH_STOP_WORDS.
+Q33. What is the output of the preprocessing program?
+Ans: It displays the original text, tokens, filtered tokens after stop word removal and stemmed words.
+Q34. What does the regular expression [a-zA-Z]+ represent?
+Ans: It matches one or more alphabetic characters, including uppercase and lowercase English letters.
+Q35. What is the purpose of the comparison list?
+Ans: It stores the original filtered words and their corresponding stemmed forms for comparison.
+________________________________________
+Important Viva Revision
+Concept	Remember this
+NLP	Processing human language
+Preprocessing	Cleaning raw text
+Tokenization	Splitting text into words
+Stop words	Common unnecessary words
+Stemming	Reducing words to stems
+Lemmatization	Finding dictionary base form
+NLTK	Natural Language Toolkit
+Porter Stemmer	Stemming algorithm
+Regular Expression	Pattern matching
+Information Retrieval	Finding relevant documents
+Practical exam tip: Be prepared to explain the four main steps: Tokenization, Stop Word Removal, Stemming and Lowercase Conversion. These are the central concepts of Assignment 1.
+

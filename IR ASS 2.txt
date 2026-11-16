@@ -1,0 +1,385 @@
+ IR ASSI 2 – RETRIEVAL OF DOCUMENTS USING INVERTED FILES
+Problem Statement: Implement a program for retrieval of documents using inverted files.
+Objective:
+1.	Evaluate and analyse retrieved information.
+2.	Study indexing, inverted files and searching with the help of inverted files.
+________________________________________
+1. PLAIN CODE (WITHOUT COMMENTS)
+import re
+from collections import defaultdict
+
+class InvertedIndexEngine:
+
+    def __init__(self):
+        self.inverted_index = defaultdict(set)
+        self.documents = {}
+
+    def add_document(self, doc_id, text):
+
+        self.documents[doc_id] = text
+
+        terms = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+
+        for term in set(terms):
+            self.inverted_index[term].add(doc_id)
+
+    def display_index(self):
+
+        print("=== INVERTED FILE (INDEX STRUCTURE) ===")
+
+        for term in sorted(self.inverted_index.keys()):
+            postings = sorted(list(self.inverted_index[term]))
+            print(f"Term: {term:<15} -> Postings List: {postings}")
+
+    def search_and(self, query):
+
+        query_terms = re.findall(r"\b[a-zA-Z]+\b", query.lower())
+
+        if not query_terms:
+            return []
+
+        matching_docs = set(self.inverted_index.get(query_terms[0], set()))
+
+        for term in query_terms[1:]:
+            matching_docs = matching_docs.intersection(
+                self.inverted_index.get(term, set())
+            )
+
+        return sorted(list(matching_docs))
+
+
+engine = InvertedIndexEngine()
+
+corpus = {
+    "Doc1": "Information retrieval and natural language processing in healthcare.",
+    "Doc2": "Machine learning algorithms for heart disease diagnosis.",
+    "Doc3": "Processing medical records and natural language clinical data.",
+    "Doc4": "Diagnosis and prediction of heart diseases using learning models."
+}
+
+for doc_id, content in corpus.items():
+    engine.add_document(doc_id, content)
+
+engine.display_index()
+
+test_queries = ["heart diagnosis", "natural language", "processing", "genomics"]
+
+print("\n=== DOCUMENT RETRIEVAL RESULTS ===")
+
+for q in test_queries:
+    results = engine.search_and(q)
+
+    print(f"Query: '{q}'")
+
+    if results:
+        print(f"  Matched Documents: {results}")
+
+        for r in results:
+            print(f'    - {r}: "{corpus[r]}"')
+
+    else:
+        print("  Matched Documents: None (0 results found)")
+________________________________________
+2. CODE WITH COMMENTS AND EXPLANATION
+# Import required libraries
+import re
+from collections import defaultdict
+
+
+# Create a class for Inverted Index
+class InvertedIndexEngine:
+
+    # Initialize the inverted index and documents
+    def __init__(self):
+        self.inverted_index = defaultdict(set)
+        self.documents = {}
+
+    # Add documents into the inverted index
+    def add_document(self, doc_id, text):
+
+        # Store document ID and its content
+        self.documents[doc_id] = text
+
+        # Convert text into lowercase and extract words
+        terms = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+
+        # Add unique terms to the inverted index
+        for term in set(terms):
+            self.inverted_index[term].add(doc_id)
+
+    # Display the generated inverted index
+    def display_index(self):
+
+        print("=== INVERTED FILE (INDEX STRUCTURE) ===")
+
+        # Sort terms alphabetically
+        for term in sorted(self.inverted_index.keys()):
+
+            # Get sorted document IDs
+            postings = sorted(list(self.inverted_index[term]))
+
+            print(f"Term: {term:<15} -> Postings List: {postings}")
+
+    # Search documents using Boolean AND operation
+    def search_and(self, query):
+
+        # Tokenize and convert query into lowercase
+        query_terms = re.findall(r"\b[a-zA-Z]+\b", query.lower())
+
+        # Return empty list if query contains no valid words
+        if not query_terms:
+            return []
+
+        # Get documents containing the first query term
+        matching_docs = set(
+            self.inverted_index.get(query_terms[0], set())
+        )
+
+        # Find common documents containing all query terms
+        for term in query_terms[1:]:
+
+            matching_docs = matching_docs.intersection(
+                self.inverted_index.get(term, set())
+            )
+
+        # Return sorted matching document IDs
+        return sorted(list(matching_docs))
+
+
+# Initialize the inverted index engine
+engine = InvertedIndexEngine()
+
+
+# Create a collection of sample documents
+corpus = {
+    "Doc1": "Information retrieval and natural language processing in healthcare.",
+    "Doc2": "Machine learning algorithms for heart disease diagnosis.",
+    "Doc3": "Processing medical records and natural language clinical data.",
+    "Doc4": "Diagnosis and prediction of heart diseases using learning models."
+}
+
+
+# Add all documents into the inverted index
+for doc_id, content in corpus.items():
+    engine.add_document(doc_id, content)
+
+
+# Display the generated inverted index
+engine.display_index()
+
+
+# Define search queries
+test_queries = ["heart diagnosis", "natural language", "processing", "genomics"]
+
+print("\n=== DOCUMENT RETRIEVAL RESULTS ===")
+
+
+# Search each query and display matching documents
+for q in test_queries:
+
+    results = engine.search_and(q)
+
+    print(f"Query: '{q}'")
+
+    if results:
+
+        print(f"  Matched Documents: {results}")
+
+        # Display matching document content
+        for r in results:
+            print(f'    - {r}: "{corpus[r]}"')
+
+    else:
+        print("  Matched Documents: None (0 results found)")
+Explanation of the Code
+1. Importing Libraries
+•	re: Used for extracting words using regular expressions.
+•	defaultdict: Used to create a dictionary with automatic default values.
+2. Creating a Class
+class InvertedIndexEngine:
+Creates a class that manages document indexing and searching operations.
+3. Constructor
+def __init__(self):
+Initializes the data structures.
+•	self.inverted_index = defaultdict(set) stores words and their corresponding document IDs.
+•	self.documents = {} stores document IDs and their original text.
+4. Adding Documents
+def add_document(self, doc_id, text):
+Adds a document to the document collection.
+self.documents[doc_id] = text
+Stores the document ID and its content.
+5. Tokenization
+terms = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+Converts the text into lowercase and extracts individual words.
+Example:
+Input: "Heart Disease Diagnosis"
+Output: ['heart', 'disease', 'diagnosis']
+6. Removing Duplicate Words
+set(terms)
+Converts the list into a set to remove duplicate words within the same document.
+Example:
+Input: ['heart', 'heart', 'disease']
+Output: {'heart', 'disease'}
+7. Creating Inverted Index
+self.inverted_index[term].add(doc_id)
+Stores the document ID against each word.
+Example:
+heart  -> Doc2, Doc4
+natural -> Doc1, Doc3
+processing -> Doc1, Doc3
+8. Displaying Inverted Index
+def display_index(self):
+Displays all indexed terms and their corresponding document IDs.
+•	sorted() sorts the terms alphabetically.
+•	list() converts a set into a list.
+•	:<15 reserves 15 character positions for formatting.
+9. Searching Documents
+def search_and(self, query):
+Searches documents using the Boolean AND operation.
+Example:
+Query: heart diagnosis
+•	Heart is available in Doc2 and Doc4.
+•	Diagnosis is available in Doc2 and Doc4.
+Therefore, the matching documents are Doc2 and Doc4.
+10. Set Intersection
+matching_docs.intersection(...)
+Finds common document IDs present in both sets.
+Only documents containing all query terms are returned.
+11. Handling Empty Queries
+if not query_terms:
+Checks whether the query contains valid words. If not, it returns an empty list.
+12. Returning Results
+return sorted(list(matching_docs))
+Returns the matching document IDs in sorted order.
+13. Main Program
+•	Creates the engine.
+•	Creates four sample documents.
+•	Adds documents to the index.
+•	Displays the inverted index.
+•	Searches four different queries.
+•	Displays matching documents and their contents.
+________________________________________
+3. SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+A. Basic Assignment Questions
+Q1. What is Information Retrieval (IR)?
+Ans: Information Retrieval is the process of searching and finding relevant information or documents from a large collection of documents.
+Q2. What is an Inverted Index?
+Ans: An inverted index is a data structure that stores each word along with the list of documents in which that word appears.
+Q3. Why do we use an inverted index?
+Ans: We use an inverted index to search documents quickly without scanning every document individually.
+Q4. What is a posting list?
+Ans: A posting list is a list of document IDs in which a particular word appears.
+Example:
+heart -> [Doc2, Doc4]
+Q5. What is a document collection or corpus?
+Ans: A corpus is a collection of documents used for indexing and searching.
+Q6. What is indexing?
+Ans: Indexing is the process of organizing words and their document references to make searching faster.
+Q7. What is the objective of this assignment?
+Ans: The objective is to implement document retrieval using an inverted index and Boolean AND searching.
+Q8. What is a term in an inverted index?
+Ans: A term is an individual word extracted from a document and stored in the index.
+B. Python Libraries and Functions
+Q9. Which libraries are used in this program?
+Ans:
+1.	re
+2.	collections
+Q10. What is the use of defaultdict?
+Ans: defaultdict is a dictionary that automatically creates a default value when a new key is accessed.
+Q11. What is the use of set()?
+Ans: A set stores unique elements and automatically removes duplicates.
+Q12. Why do we use defaultdict(set)?
+Ans: It creates an empty set automatically for every new word, allowing us to store multiple document IDs.
+Q13. What is the use of intersection()?
+Ans: It returns the common elements between two sets.
+Q14. What is the use of sorted()?
+Ans: It sorts elements in ascending order.
+Q15. What is the use of self keyword?
+Ans: self refers to the current object of a class and is used to access its variables and methods.
+Q16. What is the use of init()?
+Ans: It is a constructor that initializes the object when a class object is created.
+Q17. What is the use of re.findall()?
+Ans: It extracts all occurrences of a specified pattern from a string and returns them as a list.
+Q18. Why do we convert text into lowercase?
+Ans: To maintain uniformity and avoid treating uppercase and lowercase words as different terms.
+C. Inverted Index and Searching Concepts
+Q19. What is Boolean AND searching?
+Ans: Boolean AND searching retrieves only those documents that contain all the search terms.
+Q20. What is Boolean OR searching?
+Ans: Boolean OR searching retrieves documents containing at least one of the search terms.
+Q21. What is Boolean NOT searching?
+Ans: Boolean NOT searching excludes documents containing a specified search term.
+Q22. What is the difference between a normal index and an inverted index?
+Ans:
+•	Normal index: Maps documents to their words.
+•	Inverted index: Maps words to their corresponding documents.
+Q23. How does the program search for documents?
+Ans:
+1.	Takes a search query.
+2.	Converts it into lowercase.
+3.	Extracts individual terms.
+4.	Retrieves the posting list of each term.
+5.	Performs set intersection.
+6.	Returns matching document IDs.
+Q24. What happens if a searched word is not available in the index?
+Ans: The program returns an empty set for that word. Therefore, Boolean AND searching returns no matching documents.
+Q25. Why do we use set instead of list?
+Ans: A set automatically removes duplicate document IDs and provides efficient membership and intersection operations.
+Q26. Why do we use set(terms) while adding documents?
+Ans: To ensure that each document ID is added only once for a particular word, even if that word appears multiple times in the document.
+Q27. Can one word appear in multiple documents?
+Ans: Yes. For example, the word heart appears in Doc2 and Doc4.
+Q28. What is the difference between tokenization and indexing?
+Ans: Tokenization extracts individual words from text, whereas indexing stores those words with their document references.
+Q29. What is the time complexity of searching using an inverted index?
+Ans: Searching depends mainly on the sizes of the posting lists being processed. Set intersection can be performed efficiently without scanning the entire document collection.
+Q30. Where are inverted indexes used in real life?
+Ans:
+1.	Google Search.
+2.	Document search systems.
+3.	Digital libraries.
+4.	E-commerce search engines.
+5.	Enterprise search applications.
+D. Practical Execution Questions
+Q31. How many documents are used in this program?
+Ans: Four documents: Doc1, Doc2, Doc3 and Doc4.
+Q32. Which data structure is used to store the inverted index?
+Ans: A dictionary using defaultdict(set).
+Q33. What is the result of the query 'heart diagnosis'?
+Ans: Doc2 and Doc4.
+Q34. What is the result of the query 'natural language'?
+Ans: Doc1 and Doc3.
+Q35. What is the result of the query 'processing'?
+Ans: Doc1 and Doc3.
+Q36. What is the result of the query 'genomics'?
+Ans: No matching documents are found because the word is not present in the inverted index.
+Q37. What happens when we enter an empty query?
+Ans: The program returns an empty list.
+Q38. Can we search multiple words simultaneously?
+Ans: Yes. The program supports multiple search terms using Boolean AND operation.
+Q39. What is the purpose of the documents dictionary?
+Ans: It stores the original document content against its document ID.
+Q40. What is the main advantage of an inverted index?
+Ans: It makes document searching faster and more efficient, especially for large document collections.
+________________________________________
+IMPORTANT PRACTICAL VIVA REVISION
+Topic	Key point to remember
+Information Retrieval	Finding relevant documents
+Inverted Index	Word → Document IDs
+Posting List	List of document IDs
+Corpus	Collection of documents
+Indexing	Organizing words for searching
+defaultdict	Dictionary with default values
+set()	Stores unique elements
+intersection()	Finds common elements
+Boolean AND	All terms must match
+Boolean OR	At least one term must match
+Boolean NOT	Excludes matching terms
+Important queries to understand
+Search Query	Expected Documents
+heart diagnosis	Doc2, Doc4
+natural language	Doc1, Doc3
+processing	Doc1, Doc3
+genomics	No results
+Practical exam tip: The most important part of this assignment is understanding how the inverted index is constructed and how intersection() performs Boolean AND searching. Be ready to explain these two concepts with an example.
+

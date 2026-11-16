@@ -1,491 +1,437 @@
-Assignment 3 – Data Cleaning and Preparation
-Topic: Analyzing Customer Churn in a Telecommunications Dataset.
+QAI ASSIGNMENT 3
+Title: Implementing a 5-Qubit Quantum Fourier Transform (QFT)
+Subject: Computer Laboratory II – QAI (417526)
+Reference: Uploaded Assignment 3 PDF, pages 1–2.
+===========================================================================================================
+PART 1 — PLAIN CODE (WITHOUT COMMENTS)
+TXT-friendly code
+Copy this code directly into your .txt file.
 
-Problem Statement: To perform data cleaning, remove duplicate records, handle missing values, detect and remove outliers, perform feature engineering, encode categorical variables and standardize numerical features for machine learning.
-
-Dataset: Telecom_Customer_Churn.csv
-
-1. Python Code – Without Comments
-import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
 
-# 1. Load Raw Dataset
-df = pd.read_csv("Telecom_Customer_Churn.csv")
-print(f"Initial raw shape: {df.shape}")
+def build_qft_circuit(n_qubits=5):
+    qc = QuantumCircuit(n_qubits, name=f"QFT_{n_qubits}")
 
+    for target in range(n_qubits):
+        qc.h(target)
+        for control in range(target + 1, n_qubits):
+            k = control - target + 1
+            angle = 2 * np.pi / (2 ** k)
+            qc.cp(angle, control, target)
+        qc.barrier()
 
-# 2. Duplicate Detection & Removal
-duplicates = df.duplicated().sum()
-print(f"Duplicate rows identified: {duplicates}")
-df.drop_duplicates(inplace=True)
+    for i in range(n_qubits // 2):
+        qc.swap(i, n_qubits - i - 1)
 
-
-# 3. Clean Missing and White-space Strings
-df["TotalCharges"] = pd.to_numeric(
-    df["TotalCharges"].astype(str).str.strip(),
-    errors="coerce"
-)
-
-# Impute missing values
-median_tenure = df["tenure"].median()
-median_tc = df["TotalCharges"].median()
-
-df["tenure"].fillna(median_tenure, inplace=True)
-df["TotalCharges"].fillna(median_tc, inplace=True)
+    return qc
 
 
-# 4. Outlier Handling (IQR Filtering & Domain Thresholds)
-Q1 = df["MonthlyCharges"].quantile(0.25)
-Q3 = df["MonthlyCharges"].quantile(0.75)
+n = 5
+qft_5 = build_qft_circuit(n)
+iqft_5 = qft_5.inverse()
+iqft_5.name = f"IQFT_{n}"
 
-IQR = Q3 - Q1
-upper_limit = Q3 + 1.5 * IQR
+full_qc = QuantumCircuit(n, n)
 
-df_clean = df[
-    (df["MonthlyCharges"] >= 0) &
-    (df["MonthlyCharges"] <= upper_limit)
-].copy()
+input_val = 5
+binary_repr = format(input_val, f'0{n}b')[::-1]
 
-print(f"Rows retained after outlier treatment: {df_clean.shape[0]}")
+for qubit_idx, bit in enumerate(binary_repr):
+    if bit == '1':
+        full_qc.x(qubit_idx)
 
+full_qc.barrier(label="Input State |5>")
 
-# 5. Feature Engineering
+full_qc.append(qft_5, range(n))
+full_qc.barrier(label="QFT")
 
-# Tenure cohort binning
-df_clean["tenure_cohort"] = pd.cut(
-    df_clean["tenure"],
-    bins=[0, 12, 24, 48, 72],
-    labels=["0-1 yr", "1-2 yrs", "2-4 yrs", "4+ yrs"]
-)
+full_qc.append(iqft_5, range(n))
+full_qc.barrier(label="IQFT")
 
-# Spend-to-tenure velocity ratio
-df_clean["charges_per_tenure_ratio"] = (
-    df_clean["TotalCharges"] / (df_clean["tenure"] + 1)
-)
+full_qc.measure(range(n), range(n))
 
-# Target encoding
-df_clean["Churn_Binary"] = df_clean["Churn"].map(
-    {"Yes": 1, "No": 0}
-)
+print("--- 5-Qubit QFT Subcircuit ---")
+print(qft_5.draw(output="text"))
 
+print("\n--- Full Test Circuit ---")
+print(full_qc.draw(output="text"))
 
-# One-hot encoding for categorical variables
-df_prepared = pd.get_dummies(
-    df_clean,
-    columns=["Contract", "tenure_cohort"],
-    drop_first=True
-)
+simulator = AerSimulator()
+compiled_circuit = transpile(full_qc, simulator)
+result = simulator.run(compiled_circuit, shots=1024).result()
+counts = result.get_counts()
 
+print("\n--- Measurement Output (1024 shots) ---")
+for bitstring, count in counts.items():
+    print(f"Bitstring: {bitstring} | Decimal: {int(bitstring, 2)} | Counts: {count}/1024")
+=======================================================================================================
+PART 2 — CODE WITH COMMENTS AND EXPLANATION
+A. Complete code with comments
 
-# Standardize numerical features
-num_cols = [
-    "tenure",
-    "MonthlyCharges",
-    "TotalCharges",
-    "charges_per_tenure_ratio"
-]
-
-scaler = StandardScaler()
-
-df_prepared[num_cols] = scaler.fit_transform(
-    df_prepared[num_cols]
-)
-
-
-print("\n=== PREPARED DATASET SAMPLE ===")
-
-print(
-    df_prepared[
-        ["customerID", "tenure", "MonthlyCharges",
-         "TotalCharges", "Churn_Binary"]
-    ].head()
-)
-
-
-print("\n--- Churn Rate Across Contract Types ---")
-
-print(
-    df_clean.groupby("Contract")["Churn_Binary"]
-    .mean()
-    .apply(lambda x: f"{x * 100:.2f}%")
-)
-
-
-
-==================================================================================
-2. Python Code – With Comments and Explanation
 # Import required libraries
-
-import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
 
+# Function to build a Quantum Fourier Transform circuit
+def build_qft_circuit(n_qubits=5):
 
-# 1. Load Raw Dataset
+    # Create a quantum circuit with the specified number of qubits
+    qc = QuantumCircuit(n_qubits, name=f"QFT_{n_qubits}")
 
-# Read the telecom customer churn CSV file
-df = pd.read_csv("Telecom_Customer_Churn.csv")
+    # Apply Hadamard and Controlled Phase gates
+    for target in range(n_qubits):
 
-# Display initial number of rows and columns
-print(f"Initial raw shape: {df.shape}")
+        # Apply Hadamard gate to the target qubit
+        qc.h(target)
 
+        # Apply controlled phase rotations
+        for control in range(target + 1, n_qubits):
 
-# 2. Duplicate Detection & Removal
+            # Calculate the rotation parameter
+            k = control - target + 1
 
-# Identify duplicate records
-duplicates = df.duplicated().sum()
+            # Calculate the controlled phase angle
+            angle = 2 * np.pi / (2 ** k)
 
-print(f"Duplicate rows identified: {duplicates}")
+            # Apply Controlled Phase gate
+            qc.cp(angle, control, target)
 
-# Remove duplicate records
-df.drop_duplicates(inplace=True)
+        # Separate circuit operations using a barrier
+        qc.barrier()
 
-
-# 3. Clean Missing and White-space Strings
-
-# Remove unwanted spaces and convert TotalCharges into numeric format
-# Invalid values are converted into NaN
-df["TotalCharges"] = pd.to_numeric(
-    df["TotalCharges"].astype(str).str.strip(),
-    errors="coerce"
-)
-
-
-# Impute missing values
-
-# Calculate median of tenure
-median_tenure = df["tenure"].median()
-
-# Calculate median of TotalCharges
-median_tc = df["TotalCharges"].median()
-
-# Replace missing values with median
-df["tenure"].fillna(median_tenure, inplace=True)
-
-df["TotalCharges"].fillna(median_tc, inplace=True)
-
-
-# 4. Outlier Handling (IQR Filtering & Domain Thresholds)
-
-# Calculate first quartile
-Q1 = df["MonthlyCharges"].quantile(0.25)
-
-# Calculate third quartile
-Q3 = df["MonthlyCharges"].quantile(0.75)
-
-# Calculate Interquartile Range
-IQR = Q3 - Q1
-
-# Calculate upper outlier limit
-upper_limit = Q3 + 1.5 * IQR
-
-# Remove negative and extreme MonthlyCharges values
-df_clean = df[
-    (df["MonthlyCharges"] >= 0) &
-    (df["MonthlyCharges"] <= upper_limit)
-].copy()
-
-# Display remaining records
-print(f"Rows retained after outlier treatment: {df_clean.shape[0]}")
-
-
-# 5. Feature Engineering
-
-# Divide customers into different tenure groups
-df_clean["tenure_cohort"] = pd.cut(
-    df_clean["tenure"],
-    bins=[0, 12, 24, 48, 72],
-    labels=["0-1 yr", "1-2 yrs", "2-4 yrs", "4+ yrs"]
-)
-
-
-# Calculate charges per tenure ratio
-df_clean["charges_per_tenure_ratio"] = (
-    df_clean["TotalCharges"] / (df_clean["tenure"] + 1)
-)
-
-
-# Convert Churn values into binary format
-# Yes = 1 and No = 0
-df_clean["Churn_Binary"] = df_clean["Churn"].map(
-    {"Yes": 1, "No": 0}
-)
-
-
-# One-hot encoding for categorical variables
-
-# Convert Contract and tenure_cohort into numerical columns
-df_prepared = pd.get_dummies(
-    df_clean,
-    columns=["Contract", "tenure_cohort"],
-    drop_first=True
-)
-
-
-# Standardize numerical features
-
-# Select numerical columns
-num_cols = [
-    "tenure",
-    "MonthlyCharges",
-    "TotalCharges",
-    "charges_per_tenure_ratio"
-]
-
-# Create StandardScaler object
-scaler = StandardScaler()
-
-# Standardize selected numerical columns
-df_prepared[num_cols] = scaler.fit_transform(
-    df_prepared[num_cols]
-)
-
-
-# Display prepared dataset
-
-print("\n=== PREPARED DATASET SAMPLE ===")
-
-print(
-    df_prepared[
-        ["customerID", "tenure", "MonthlyCharges",
-         "TotalCharges", "Churn_Binary"]
-    ].head()
-)
-
-
-# Calculate churn rate across contract types
-
-print("\n--- Churn Rate Across Contract Types ---")
-
-print(
-    df_clean.groupby("Contract")["Churn_Binary"]
-    .mean()
-    .apply(lambda x: f"{x * 100:.2f}%")
-)
-
-
-Important Code Explanation
-Function / Concept	Explanation
-pd.read_csv()	Reads the CSV dataset.
-df.shape	Returns number of rows and columns.
-duplicated()	Identifies duplicate records.
-drop_duplicates()	Removes duplicate records.
-str.strip()	Removes leading and trailing spaces.
-pd.to_numeric()	Converts values into numeric format.
-errors="coerce"	Converts invalid values into NaN.
-median()	Calculates the middle value of sorted data.
-fillna()	Replaces missing values.
-quantile()	Calculates quartiles.
-IQR	Measures the spread of the middle 50% of data.
-pd.cut()	Divides numerical values into categories.
-map()	Maps existing values to new values.
-pd.get_dummies()	Performs one-hot encoding.
-StandardScaler()	Standardizes numerical features.
-fit_transform()	Learns scaling parameters and transforms data.
-groupby()	Groups records based on a column.
-head()	Displays the first five rows.
-
-3. Expected Output
-A. Data Cleaning Summary
-Initial raw shape: (1005, 6)
-
-Duplicate rows identified: 5
-
-Rows retained after outlier treatment: 998
-
-
-B. Prepared Dataset Sample
-=== PREPARED DATASET SAMPLE ===
-
-  customerID  tenure  MonthlyCharges  TotalCharges  Churn_Binary
-
-0 CUST-0001  0.781210  1.258901      1.354120      0
-1 CUST-0002 -1.023801  1.171052     -0.622619      0
-2 CUST-0003  1.220261 -0.320743      0.407515      0
-3 CUST-0004 -0.731100  0.612502     -0.491612      0
-4 CUST-0005 -0.584750 -0.982928     -0.913840      0
-
-
-C. Churn Rate Across Contract Types
---- Churn Rate Across Contract Types ---
-
-Contract
-Month-to-month    27.83%
-One year          24.29%
-Two year          21.65%
-
-
-Output values are reproduced from your assignment image. Actual results depend on the CSV dataset.
-
-4. SPPU Practical Viva Questions and Answers
-These questions are focused on the actual code and concepts used in Assignment 3.
-A. Basic Data Cleaning Questions
-Q1. What is Data Cleaning?
-
-Answer: Data Cleaning is the process of removing incorrect, duplicate, missing and inconsistent data to improve data quality.
-
-Q2. What is Data Preprocessing?
-
-Answer: Data Preprocessing is the process of converting raw data into a clean and suitable format before applying machine learning algorithms.
-
-Q3. Why is data cleaning important in Machine Learning?
-
-Answer: It improves data quality, reduces errors and helps machine learning models produce more reliable results.
-
-Q4. What is a duplicate record?
-
-Answer: A duplicate record is a repeated entry in a dataset containing the same information.
-
-Q5. How do you identify duplicate records in Pandas?
-
-Answer: We use the duplicated() function.
-
-Q6. How do you remove duplicate records?
-
-Answer: We use the drop_duplicates() function.
-B. Missing Values and Data Handling
-Q7. What is a missing value?
-
-Answer: A missing value is a value that is not available or recorded in a dataset. Pandas generally represents it as NaN.
-
-Q8. What is imputation?
-
-Answer: Imputation is the process of replacing missing values with suitable values such as mean, median or mode.
-
-Q9. What is the difference between mean and median?
-
-Answer:
-- Mean: Average of all values.
-- Median: Middle value after arranging values in ascending order.
-Q10. Why do we use median instead of mean?
-
-Answer: Median is less affected by extreme values and is useful when the dataset contains outliers.
-
-Q11. What is the use of fillna()?
-
-Answer: It replaces missing values with a specified value.
-
-Q12. What is the use of str.strip()?
-
-Answer: It removes unwanted leading and trailing spaces from string values.
-
-Q13. What is the use of errors="coerce"?
-
-Answer: It converts invalid numerical values into NaN instead of generating an error.
-C. Outlier Detection Questions
-Q14. What is an outlier?
-
-Answer: An outlier is a data value that is significantly different from most other values in a dataset.
-
-Q15. What is IQR?
-
-Answer: IQR stands for Interquartile Range. It measures the spread of the middle 50% of the dataset.
-\[
-IQR = Q3-Q1
-\]
-
-Q16. What are Q1 and Q3?
-
-Answer:
-- Q1: First quartile or 25th percentile.
-- Q3: Third quartile or 75th percentile.
-Q17. What is the formula for detecting outliers using IQR?
-
-Answer:
-\[
-Lower=Q1-1.5(IQR)
-\]
-
-\[
-Upper=Q3+1.5(IQR)
-\]
-
-Values outside these limits are generally considered outliers.
-
-Q18. How are outliers handled in this program?
-
-Answer: We calculate Q1, Q3 and IQR for MonthlyCharges. Then we retain non-negative values that are below or equal to the upper IQR limit.
-D. Feature Engineering Questions
-Q19. What is Feature Engineering?
-
-Answer: Feature Engineering is the process of creating new useful features from existing data to improve machine learning performance.
-
-Q20. What is pd.cut()?
-
-Answer: It divides continuous numerical data into different categories or intervals.
-
-Q21. What is categorical data?
-
-Answer: Categorical data represents values in groups or categories, such as gender, contract type or customer status.
-
-Q22. What is encoding?
-
-Answer: Encoding is the process of converting categorical data into numerical form so machine learning algorithms can process it.
-
-Q23. What is One-Hot Encoding?
-
-Answer: One-Hot Encoding converts categorical values into separate binary columns containing 0 and 1.
-
-Q24. What is Target Encoding in this program?
-
-Answer: In this program, the Churn column is mapped into binary values:
-- Yes = 1
-- No = 0
-Q25. What is the use of drop_first=True?
-
-Answer: It removes the first dummy column to reduce redundant information and avoid the dummy variable trap.
-E. Standardization and Machine Learning
-Q26. What is Standardization?
-
-Answer: Standardization is the process of transforming numerical data so that it has a mean of approximately 0 and standard deviation of 1.
-
-Q27. Which library is used for standardization?
-
-Answer: We use StandardScaler from the Scikit-learn preprocessing module.
-
-Q28. What is the formula for Standardization?
-\[
-Z=\frac{X-\mu}{\sigma}
-\]
-
+    # Swap qubits to match standard bit ordering
+    for i in range(n_qubits // 2):
+        qc.swap(i, n_qubits - i - 1)
+
+    # Return the QFT circuit
+    return qc
+
+
+# Experiment setup
+n = 5
+
+# Build the 5-qubit QFT circuit
+qft_5 = build_qft_circuit(n)
+
+# Create the inverse QFT circuit
+iqft_5 = qft_5.inverse()
+iqft_5.name = f"IQFT_{n}"
+
+# Create the complete circuit with 5 qubits and 5 classical bits
+full_qc = QuantumCircuit(n, n)
+
+# Prepare the input state |5>
+input_val = 5
+
+# Convert decimal number into 5-bit binary
+# Reverse the bits according to Qiskit qubit indexing
+binary_repr = format(input_val, f'0{n}b')[::-1]
+
+# Apply X gates wherever the binary bit is 1
+for qubit_idx, bit in enumerate(binary_repr):
+    if bit == '1':
+        full_qc.x(qubit_idx)
+
+# Add barrier after preparing input state
+full_qc.barrier(label="Input State |5>")
+
+# Append the QFT circuit
+full_qc.append(qft_5, range(n))
+full_qc.barrier(label="QFT")
+
+# Append the inverse QFT circuit
+full_qc.append(iqft_5, range(n))
+full_qc.barrier(label="IQFT")
+
+# Measure all qubits
+full_qc.measure(range(n), range(n))
+
+# Display QFT subcircuit
+print("--- 5-Qubit QFT Subcircuit ---")
+print(qft_5.draw(output="text"))
+
+# Display complete circuit
+print("\n--- Full Test Circuit ---")
+print(full_qc.draw(output="text"))
+
+# Create quantum simulator
+simulator = AerSimulator()
+
+# Compile the circuit for the simulator
+compiled_circuit = transpile(full_qc, simulator)
+
+# Execute the circuit for 1024 shots
+result = simulator.run(compiled_circuit, shots=1024).result()
+
+# Get measurement counts
+counts = result.get_counts()
+
+# Display measurement output
+print("\n--- Measurement Output (1024 shots) ---")
+
+for bitstring, count in counts.items():
+
+    # Convert binary result into decimal
+    decimal_val = int(bitstring, 2)
+
+    # Display binary, decimal and measurement counts
+    print(f"Bitstring: {bitstring} | Decimal: {decimal_val} | Counts: {count}/1024")
+B. Explanation of Important Code
+1. Import libraries
+import numpy as np
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+•	NumPy: Used for mathematical calculations such as π.
+•	QuantumCircuit: Creates quantum circuits.
+•	transpile: Converts the circuit into simulator-compatible instructions.
+•	AerSimulator: Simulates quantum circuits locally.
+2. Define QFT function
+def build_qft_circuit(n_qubits=5):
+    qc = QuantumCircuit(n_qubits, name=f"QFT_{n_qubits}")
+Creates a function to build a Quantum Fourier Transform circuit.
+Here, n_qubits=5 means the circuit uses five qubits.
+3. Apply Hadamard gate
+for target in range(n_qubits):
+    qc.h(target)
+Applies a Hadamard gate to each qubit.
+The Hadamard gate creates superposition, allowing the qubits to represent combinations of quantum states.
+4. Apply Controlled Phase gate
+for control in range(target + 1, n_qubits):
+    k = control - target + 1
+    angle = 2 * np.pi / (2 ** k)
+    qc.cp(angle, control, target)
+•	Controlled Phase gate applies a phase rotation.
+•	angle calculates the rotation angle.
+•	qc.cp() applies the controlled phase gate between two qubits.
+The controlled phase rotations are important for implementing the QFT.
+5. Apply Barrier
+qc.barrier()
+Separates different operations in the circuit and makes the circuit diagram easier to understand.
+6. Swap qubits
+for i in range(n_qubits // 2):
+    qc.swap(i, n_qubits - i - 1)
+Swaps the first and last qubits, then the second and second-last qubits.
+This helps arrange the output in the standard bit ordering.
+7. Create inverse QFT
+iqft_5 = qft_5.inverse()
+Creates the inverse of the QFT circuit.
+The inverse QFT reverses the operations of the original QFT.
+Remember:
+•	QFT converts a quantum state into its Fourier-transformed representation.
+•	IQFT performs the reverse transformation.
+8. Prepare input state |5⟩
+input_val = 5
+binary_repr = format(input_val, f'0{n}b')[::-1]
+Converts decimal number 5 into a 5-bit binary number.
+\[ 5 = (00101)_2 \]
+The binary string is reversed because Qiskit uses little-endian qubit indexing, where q0 is the least significant bit.
+Therefore:
+Input state: |5⟩
+Normal binary
+00101
+Reversed binary
+10100
+Qiskit qubit values
+q4
+0
+q3
+0
+q2
+1
+q1
+0
+q0
+1
+Apply X gates to q0 and q2.
+9. Apply X gates
+for qubit_idx, bit in enumerate(binary_repr):
+    if bit == '1':
+        full_qc.x(qubit_idx)
+The X gate changes the qubit from |0⟩ to |1⟩.
+Since the input number is 5, X gates are applied to q0 and q2.
+10. Append QFT circuit
+full_qc.append(qft_5, range(n))
+Adds the 5-qubit QFT circuit to the complete quantum circuit.
+11. Append inverse QFT
+full_qc.append(iqft_5, range(n))
+Applies the inverse QFT to reverse the Fourier transformation.
+Ideally, the original input state is recovered.
+12. Measure all qubits
+full_qc.measure(range(n), range(n))
+Measures all five qubits and stores the results in five classical bits.
+13. Execute using simulator
+simulator = AerSimulator()
+compiled_circuit = transpile(full_qc, simulator)
+result = simulator.run(compiled_circuit, shots=1024).result()
+•	Creates the simulator.
+•	Compiles the circuit.
+•	Executes the circuit 1024 times.
+•	Collects the results.
+14. Get measurement counts
+counts = result.get_counts()
+Returns the number of times each measurement result occurs.
+15. Convert binary into decimal
+for bitstring, count in counts.items():
+    print(f"Bitstring: {bitstring} | Decimal: {int(bitstring, 2)} | Counts: {count}/1024")
+Displays:
+•	Binary measurement result.
+•	Decimal equivalent.
+•	Number of occurrences out of 1024 shots.
+C. Expected Output
+According to your uploaded Assignment 3 PDF:
+--- Measurement Output (1024 shots) ---
+
+Bitstring: 00101 | Decimal: 5 | Counts: 1024/1024
+Output interpretation
+Original input
+5
+Binary output
+00101
+Decimal output
+5
+Total shots
+1024
+Successful recovery
+1024 / 1024
+Why do we get the same number 5?
+Because the circuit first applies QFT and then inverse QFT. Ideally, these two operations cancel each other, recovering the original quantum state.
+D. Overall Working of the Program
+Initialize 5 Qubits
+Prepare Input State |5⟩
+Binary: 00101
+Apply Quantum Fourier Transform
+Hadamard + Controlled Phase + SWAP
+Apply Inverse QFT
+Recover the original state
+Measure All Qubits
+Display Output
+00101 = 5
+=======================================================================================================
+PART 3 — SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+These questions are focused on the QFT assignment, its Python implementation and the underlying quantum computing concepts.
+A. Basic Quantum Fourier Transform Questions
+Q1. What is Quantum Fourier Transform (QFT)?
+Ans: QFT is a quantum algorithm that transforms a quantum state from the computational basis into the Fourier basis.
+Q2. What is the objective of this assignment?
+Ans: To implement a 5-qubit Quantum Fourier Transform using Qiskit and verify it using the inverse QFT.
+Q3. What is Fourier Transform?
+Ans: Fourier Transform converts a signal from the time or original domain into the frequency domain.
+Q4. What is the difference between Classical Fourier Transform and Quantum Fourier Transform?
+Ans:
+Classical Fourier Transform	Quantum Fourier Transform
+Works on classical data	Works on quantum states
+Uses classical computation	Uses quantum gates
+Produces frequency representation	Produces quantum Fourier representation
+Q5. Why do we use QFT in quantum computing?
+Ans: QFT is used in quantum algorithms such as Shor's algorithm and quantum phase estimation.
+Q6. What is the inverse QFT?
+Ans: Inverse QFT reverses the operations of QFT and converts the Fourier-transformed state back into its original representation.
+Q7. What is the relationship between QFT and IQFT?
+Ans: They are inverse operations. Applying QFT followed by IQFT ideally restores the original quantum state.
+Q8. What is the mathematical formula of QFT?
+Ans:
+\[ QFT|x\rangle = \frac{1}{\sqrt{N}} \sum_{y=0}^{N-1} e^{2\pi ixy/N}|y\rangle \]
 Where:
-- X = Original value
-- μ = Mean
-- σ = Standard deviation
-- Z = Standardized value
-Q29. Why is standardization required?
+•	N = Number of possible states.
+•	x = Input state.
+•	y = Output state.
+•	i = Imaginary unit.
+B. Quantum Gates Questions
+Q9. Which gates are used in this QFT program?
+Ans:
+1.	Hadamard gate.
+2.	Controlled Phase gate.
+3.	SWAP gate.
+4.	X gate.
+Q10. What is a Hadamard gate?
+Ans: Hadamard gate creates an equal superposition of 0 and 1 when applied to the |0⟩ state.
+Q11. What is a Controlled Phase gate?
+Ans: It applies a phase rotation to a quantum state depending on the state of the control qubit.
+Q12. What is a SWAP gate?
+Ans: SWAP gate exchanges the states of two qubits.
+Q13. Why is the SWAP gate used in QFT?
+Ans: It reverses the qubit order to match the standard output bit ordering.
+Q14. What is a quantum gate?
+Ans: A quantum gate is an operation that changes the state of one or more qubits.
+C. Program-Related Questions
+Q15. How many qubits are used in this assignment?
+Ans: Five qubits.
+Q16. Which Python library is used?
+Ans: Qiskit, NumPy and Qiskit Aer.
+Q17. What is the purpose of NumPy?
+Ans: NumPy is used for mathematical calculations, particularly for calculating π and rotation angles.
+Q18. What does np.pi represent?
+Ans: It represents the mathematical constant π.
+Q19. What is the purpose of qc.h(target)?
+Ans: It applies a Hadamard gate to the target qubit.
+Q20. What does qc.cp(angle, control, target) do?
+Ans: It applies a Controlled Phase gate between the control and target qubits using the specified angle.
+Q21. What does qc.swap() do?
+Ans: It exchanges the states of two qubits.
+Q22. What is the purpose of qft_5.inverse()?
+Ans: It generates the inverse of the 5-qubit QFT circuit.
+Q23. Why do we use the X gate in this program?
+Ans: To prepare the input state |5⟩ by changing the required qubits from 0 to 1.
+Q24. Why is binary representation used?
+Ans: Quantum circuits operate on qubits representing binary states, so we convert the decimal input into binary before preparing the quantum state.
+Q25. Why do we reverse the binary string?
+Ans: Because Qiskit uses little-endian qubit indexing, where q0 represents the least significant bit.
+Q26. What is the purpose of transpile()?
+Ans: It converts the quantum circuit into instructions supported by the simulator.
+Q27. What is AerSimulator?
+Ans: It is a local simulator used to execute quantum circuits.
+Q28. What does shots=1024 mean?
+Ans: It means the circuit is executed 1024 times.
+Q29. What does get_counts() return?
+Ans: It returns the number of occurrences of each measurement result.
+Q30. Why do we use classical bits?
+Ans: Classical bits store the final measurement results of the qubits.
+D. Important Conceptual Viva Questions
+Q31. What is superposition?
+Ans: Superposition means a qubit can exist in a combination of |0⟩ and |1⟩ states.
+Q32. What is the difference between QFT and IQFT?
+Ans:
+•	QFT transforms a state into the Fourier basis.
+•	IQFT reverses that transformation.
+Q33. How many possible states can five qubits represent?
+Ans:
+\[ 2^5=32 \]
+There are 32 computational basis states.
+Q34. What is the input given in this program?
+Ans: The decimal number 5, represented as binary 00101.
+Q35. What is the final output of this program?
+Ans: The final output is binary 00101, which represents decimal 5.
+Q36. Why does the program return the original input?
+Ans: Because QFT and inverse QFT are applied consecutively, ideally cancelling each other's effects.
+Q37. Where is QFT used in real-world quantum algorithms?
+Ans:
+•	Shor's factoring algorithm.
+•	Quantum Phase Estimation.
+•	Quantum period finding.
+Q38. What is a quantum circuit barrier?
+Ans: A barrier separates circuit operations and helps organize the circuit.
+Q39. What happens if we remove the inverse QFT?
+Ans: The circuit will measure the Fourier-transformed state instead of directly recovering the original input state.
+Q40. What is the maximum number of states represented by five qubits?
+Ans: 32 possible computational basis states.
+Important questions to prepare first
+High priority for practical viva
+1.	What is QFT?
+2.	What is IQFT?
+3.	What is the difference between QFT and IQFT?
+4.	What is the Hadamard gate?
+5.	What is a Controlled Phase gate?
+6.	What is a SWAP gate?
+7.	Why are five qubits used?
+8.	Why do we reverse the binary string?
+9.	What is the purpose of shots=1024?
+10.	Why do we get the original input after applying QFT and IQFT?
+One-minute explanation for the examiner
+"Sir/Madam, in this assignment, we implement a 5-qubit Quantum Fourier Transform using Qiskit. First, we prepare the input state |5⟩, whose binary representation is 00101. Then we apply Hadamard gates and Controlled Phase gates to perform QFT. We also use SWAP gates to arrange the qubit ordering. After that, we apply the inverse QFT to recover the original state. Finally, we measure all five qubits using AerSimulator for 1024 shots. The final output is 00101, which represents decimal 5."
+Assignment 3 completed
+Important technical note: This assignment tests QFT followed by inverse QFT (round-trip verification). It demonstrates recovery of the original input state, rather than independently displaying the Fourier-transformed output.
+Next: Send Assignment 4 code. I'll continue with the same three sections and assignment numbering.
 
-Answer: It brings numerical features to a common scale so that features with larger values do not unnecessarily dominate certain machine learning algorithms.
-
-Q30. What is the difference between normalization and standardization?
-
-Answer:
-Normalization	Standardization
-Usually scales values between 0 and 1.	Makes mean 0 and standard deviation 1.
-Uses minimum and maximum values.	Uses mean and standard deviation.
-Uses MinMaxScaler commonly.	Uses StandardScaler commonly.
-
-F. Customer Churn Questions
-Q31. What is Customer Churn?
-
-Answer: Customer Churn means customers stop using a company's products or services.
-
-Q32. Why is customer churn prediction important?
-
-Answer: It helps companies identify customers who may leave and take preventive actions to retain them.
-
-Q33. What does Churn = Yes represent?
-
-Answer: It means the customer has left or discontinued the service.
-
-Q34. What is a Churn Rate?
-
-Answer: Churn Rate is the percentage of customers who leave a company during a particular period.
-\[
-Churn\ Rate=\frac{Customers\ Lost}{Total\ Customers}\times100
-\]
-
-Q35. What is the purpose of grouping by Contract?
-
-Answer: It helps compare the churn rate among different contract types, such as monthly, one-year and two-year contracts.

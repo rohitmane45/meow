@@ -1,0 +1,396 @@
+IR ASSIGNMENT 5 – AGGLOMERATIVE HIERARCHICAL CLUSTERING
+1. PLAIN CODE (WITHOUT COMMENTS)
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import silhouette_score
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+iris = load_iris()
+X = iris.data
+y_true = iris.target
+feature_names = iris.feature_names
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+agg = AgglomerativeClustering(
+    n_clusters=3,
+    metric="euclidean",
+    linkage="ward"
+)
+
+labels = agg.fit_predict(X_scaled)
+
+sil_score = silhouette_score(X_scaled, labels)
+cluster_counts = np.bincount(labels)
+
+print("=== ASSIGNMENT 5: AGGLOMERATIVE CLUSTERING ===")
+print("Dataset: Iris (150 instances, 4 numeric attributes)")
+print("Clusters Formed: 3")
+print(f"Samples per Cluster: Cluster 0: {cluster_counts[0]}, Cluster 1: {cluster_counts[1]}, Cluster 2: {cluster_counts[2]}")
+print(f"Silhouette Coefficient: {sil_score:.4f}")
+
+linkage_matrix = linkage(X_scaled, method="ward")
+
+plt.figure(figsize=(10, 5))
+
+dendrogram(
+    linkage_matrix,
+    truncate_mode="level",
+    p=4,
+    leaf_rotation=45,
+    leaf_font_size=10,
+    show_contracted=True
+)
+
+plt.title("Hierarchical Clustering Dendrogram (Ward Linkage)", fontsize=12, fontweight="bold")
+plt.xlabel("Cluster Sample Index / Subtree Size")
+plt.ylabel("Euclidean Merge Distance")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.savefig("dendrogram_iris.png", dpi=200)
+plt.show()
+________________________________________
+2. CODE WITH COMMENTS
+# Import required libraries
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import silhouette_score
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+# 1. Load the Iris dataset
+iris = load_iris()
+
+# Store features, target values, and feature names
+X = iris.data
+y_true = iris.target
+feature_names = iris.feature_names
+
+# 2. Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 3. Apply Agglomerative Hierarchical Clustering
+# Create 3 clusters using Euclidean distance and Ward linkage
+agg = AgglomerativeClustering(
+    n_clusters=3,
+    metric="euclidean",
+    linkage="ward"
+)
+
+# Fit the model and predict cluster labels
+labels = agg.fit_predict(X_scaled)
+
+# 4. Evaluate the clustering model
+# Calculate Silhouette Score
+sil_score = silhouette_score(X_scaled, labels)
+
+# Count the number of samples in each cluster
+cluster_counts = np.bincount(labels)
+
+# Display the results
+print("=== ASSIGNMENT 5: AGGLOMERATIVE CLUSTERING ===")
+print("Dataset: Iris (150 instances, 4 numeric attributes)")
+print("Clusters Formed: 3")
+
+print(f"Samples per Cluster: Cluster 0: {cluster_counts[0]}, Cluster 1: {cluster_counts[1]}, Cluster 2: {cluster_counts[2]}")
+
+print(f"Silhouette Coefficient: {sil_score:.4f}")
+
+# 5. Generate the linkage matrix for the dendrogram
+linkage_matrix = linkage(X_scaled, method="ward")
+
+# Create a figure for the dendrogram
+plt.figure(figsize=(10, 5))
+
+# Plot the hierarchical clustering dendrogram
+dendrogram(
+    linkage_matrix,
+    truncate_mode="level",
+    p=4,
+    leaf_rotation=45,
+    leaf_font_size=10,
+    show_contracted=True
+)
+
+# Add title and axis labels
+plt.title(
+    "Hierarchical Clustering Dendrogram (Ward Linkage)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+plt.xlabel("Cluster Sample Index / Subtree Size")
+plt.ylabel("Euclidean Merge Distance")
+
+# Display grid and adjust layout
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+
+# Save the dendrogram as an image
+plt.savefig("dendrogram_iris.png", dpi=200)
+
+# Display the dendrogram
+plt.show()
+________________________________________
+3. STEP-BY-STEP CODE EXPLANATION
+Step 1: Import Libraries
+•	numpy: Used for numerical operations and counting cluster samples.
+•	matplotlib.pyplot: Used for plotting the dendrogram.
+•	load_iris: Loads the Iris flower dataset.
+•	StandardScaler: Standardizes the dataset.
+•	AgglomerativeClustering: Performs hierarchical clustering.
+•	silhouette_score: Evaluates clustering quality.
+•	dendrogram and linkage: Used to generate the hierarchical clustering tree.
+Step 2: Load the Iris Dataset
+iris = load_iris()
+X = iris.data
+y_true = iris.target
+feature_names = iris.feature_names
+The Iris dataset is a standard machine learning dataset.
+It contains:
+•	150 flower samples.
+•	4 numerical features.
+•	3 flower species: Setosa, Versicolor, and Virginica.
+X contains the input features.
+y_true contains the original species labels. It is not used to train this clustering model.
+feature_names contains the names of the four features.
+Step 3: Standardize the Features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+Standardization converts features into a common scale.
+It transforms the data so that each feature approximately has:
+•	Mean = 0
+•	Standard deviation = 1
+Why is standardization required?
+Different features may have different measurement ranges. Standardization prevents features with larger numerical values from dominating distance calculations.
+Step 4: Create the Agglomerative Clustering Model
+agg = AgglomerativeClustering(
+    n_clusters=3,
+    metric="euclidean",
+    linkage="ward"
+)
+This creates the clustering model.
+•	n_clusters=3: Creates three final clusters.
+•	metric="euclidean": Uses Euclidean distance to measure the distance between observations.
+•	linkage="ward": Merges clusters while minimizing the increase in within-cluster variance.
+Step 5: Train the Model
+labels = agg.fit_predict(X_scaled)
+This performs clustering on the standardized dataset.
+The model assigns every flower sample to a cluster.
+The cluster labels are usually numbered 0, 1, and 2.
+These numbers are cluster identifiers, not the original species names.
+Step 6: Evaluate the Model
+sil_score = silhouette_score(X_scaled, labels)
+The Silhouette Score measures how well-separated the clusters are.
+Its value ranges from -1 to +1.
+•	Close to +1: Well-separated clusters.
+•	Around 0: Clusters overlap.
+•	Negative value: Some samples may be assigned to the wrong cluster.
+Step 7: Count Samples in Each Cluster
+cluster_counts = np.bincount(labels)
+np.bincount() counts how many samples belong to each cluster.
+According to the supplied output:
+•	Cluster 0: 71 samples.
+•	Cluster 1: 49 samples.
+•	Cluster 2: 30 samples.
+Total = 150 samples.
+Step 8: Generate the Linkage Matrix
+linkage_matrix = linkage(X_scaled, method="ward")
+The linkage function calculates the hierarchical merging information.
+Ward linkage combines clusters by minimizing the increase in within-cluster variance.
+Step 9: Plot the Dendrogram
+dendrogram(
+    linkage_matrix,
+    truncate_mode="level",
+    p=4,
+    leaf_rotation=45,
+    leaf_font_size=10,
+    show_contracted=True
+)
+A dendrogram is a tree-like diagram that represents the merging of clusters.
+•	linkage_matrix: Contains cluster merging information.
+•	truncate_mode="level": Displays a shortened dendrogram based on levels.
+•	p=4: Displays the selected four levels in truncated mode.
+•	leaf_rotation=45: Rotates leaf labels by 45 degrees.
+•	leaf_font_size=10: Sets the leaf-label font size.
+•	show_contracted=True: Shows information about contracted branches.
+Step 10: Save and Display the Dendrogram
+plt.savefig("dendrogram_iris.png", dpi=200)
+plt.show()
+•	savefig(): Saves the dendrogram as an image.
+•	dpi=200: Sets the image resolution.
+•	show(): Displays the graph.
+________________________________________
+4. SPPU PRACTICAL VIVA QUESTIONS AND ANSWERS
+A. Basic Clustering Concepts
+Q1. What is clustering?
+Clustering is an unsupervised machine learning technique that groups similar data points together.
+
+Q2. What is unsupervised learning?
+Unsupervised learning is a machine learning approach where the model learns patterns from data without using labelled output.
+
+Q3. What is hierarchical clustering?
+Hierarchical clustering is an unsupervised learning technique that creates a hierarchy of clusters in the form of a tree.
+
+Q4. What are the types of hierarchical clustering?
+There are two main types:
+1.	Agglomerative clustering.
+2.	Divisive clustering.
+
+Q5. What is agglomerative clustering?
+Agglomerative clustering is a bottom-up approach. It starts with each data point as a separate cluster and repeatedly merges the closest clusters.
+Q6. What is divisive clustering?
+
+Divisive clustering is a top-down approach. It starts with all data points in one cluster and repeatedly divides them into smaller clusters.
+Q7. Why is agglomerative clustering called bottom-up clustering?
+Because it starts with individual data points and gradually combines them into larger clusters.
+Q8. Is hierarchical clustering supervised or unsupervised?
+It is an unsupervised learning technique.
+B. Dataset and Preprocessing
+Q9. Which dataset is used in this assignment?
+The Iris dataset.
+Q10. How many samples are present in the Iris dataset?
+It contains 150 samples.
+Q11. How many features are present in the Iris dataset?
+It contains four features:
+1.	Sepal length.
+2.	Sepal width.
+3.	Petal length.
+4.	Petal width.
+Q12. How many species are present in the Iris dataset?
+Three species:
+1.	Setosa.
+2.	Versicolor.
+3.	Virginica.
+Q13. What is StandardScaler?
+StandardScaler is a preprocessing technique that transforms features to have approximately zero mean and unit standard deviation.
+Q14. Why do we standardize the dataset?
+Because features may have different scales. Standardization ensures that distance calculations are not dominated by features with larger values.
+Q15. What is the difference between normalization and standardization?
+Normalization generally scales values into a fixed range, often 0 to 1. Standardization transforms values using the mean and standard deviation.
+C. Agglomerative Clustering
+Q16. Which clustering algorithm is used in this assignment?
+Agglomerative Hierarchical Clustering.
+Q17. Which Python library is used for clustering?
+Scikit-learn.
+Q18. Which class is used to implement agglomerative clustering?
+AgglomerativeClustering.
+Q19. What does n_clusters=3 mean?
+It specifies that the algorithm should create three final clusters.
+Q20. What is Euclidean distance?
+Euclidean distance measures the straight-line distance between two points.
+For two-dimensional points:
+[
+d=\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}
+]
+Q21. What is linkage in hierarchical clustering?
+Linkage is the method used to calculate the distance between two clusters.
+Q22. What are the common types of linkage methods?
+1.	Single linkage.
+2.	Complete linkage.
+3.	Average linkage.
+4.	Ward linkage.
+Q23. What is Ward linkage?
+Ward linkage merges clusters in a way that minimizes the increase in within-cluster variance.
+Q24. Why is Ward linkage used in this assignment?
+It generally produces compact clusters by minimizing the increase in within-cluster variation.
+Q25. What happens when two clusters are merged?
+The algorithm combines them into one larger cluster and continues until the required number of clusters is obtained.
+D. Dendrogram
+Q26. What is a dendrogram?
+A dendrogram is a tree-like diagram that shows how clusters are merged during hierarchical clustering.
+Q27. Why is a dendrogram used?
+It helps visualize the hierarchical structure and understand how clusters are combined.
+Q28. What does the X-axis represent in a dendrogram?
+It represents the sample indices or cluster groups, depending on the dendrogram configuration.
+Q29. What does the Y-axis represent?
+It represents the distance or dissimilarity at which clusters are merged.
+Q30. What does a large vertical distance between merges indicate?
+It indicates that clusters being merged are relatively dissimilar. A large gap can help identify a possible place to cut the dendrogram.
+Q31. What is the purpose of the linkage() function?
+It calculates the hierarchical cluster-merging information required to construct a dendrogram.
+Q32. Which library provides the dendrogram function?
+SciPy, specifically scipy.cluster.hierarchy.
+E. Model Evaluation
+Q33. What is the Silhouette Score?
+It is a metric used to evaluate how well data points fit within their assigned clusters compared with other clusters.
+Q34. What is the range of the Silhouette Score?
+It ranges from -1 to +1.
+Q35. What does a Silhouette Score close to +1 indicate?
+It indicates that clusters are well-separated and samples are generally assigned to appropriate clusters.
+Q36. What does a Silhouette Score close to 0 indicate?
+It indicates that clusters may overlap or that samples lie near cluster boundaries.
+Q37. What does a negative Silhouette Score indicate?
+It suggests that some samples may be closer to another cluster than to their assigned cluster.
+Q38. What is np.bincount(labels) used for?
+It counts the number of samples assigned to each non-negative integer cluster label.
+Q39. What is the total number of samples in the output?
+150 samples.
+Q40. What are the cluster sizes in the given output?
+•	Cluster 0: 71 samples.
+•	Cluster 1: 49 samples.
+•	Cluster 2: 30 samples.
+Q41. What is the Silhouette Coefficient in the given output?
+0.4467.
+Q42. Is a Silhouette Score of 0.4467 good?
+It indicates moderate clustering quality. The clusters have some separation, but they are not perfectly separated.
+F. Practical and Conceptual Questions
+Q43. What is the difference between K-Means and hierarchical clustering?
+K-Means requires the number of clusters to be specified beforehand and uses iterative centroid-based grouping. Hierarchical clustering builds a hierarchy of clusters through merging or splitting.
+Q44. Does agglomerative clustering require the number of clusters?
+It can be used without specifying a fixed number when constructing a complete hierarchy. In this assignment, n_clusters=3 is specified to obtain three final clusters.
+Q45. What are the advantages of hierarchical clustering?
+1.	Easy to understand and visualize.
+2.	Does not require random centroid initialization.
+3.	Shows the hierarchy of clusters.
+4.	Different linkage methods can be used.
+Q46. What are the disadvantages of hierarchical clustering?
+1.	Can be computationally expensive for large datasets.
+2.	Sensitive to noise and outliers.
+3.	Early merging decisions generally cannot be reversed.
+4.	Results depend on the selected distance and linkage method.
+Q47. Can hierarchical clustering be used for large datasets?
+It can be used, but it may become computationally expensive and memory-intensive for very large datasets.
+Q48. Is the original Iris target label used to train this clustering model?
+No. The model uses only the input features. The y_true variable stores the original labels but is not used in clustering or evaluation here.
+Q49. Can we use hierarchical clustering for customer segmentation?
+Yes. It can group customers based on features such as purchasing behaviour, spending, and age.
+Q50. What is the final objective of this assignment?
+The objective is to group Iris flower samples into three clusters using Agglomerative Hierarchical Clustering, evaluate the clusters using the Silhouette Score, and visualize the hierarchy using a dendrogram.
+________________________________________
+5. QUICK REVISION BEFORE PRACTICAL EXAM
+Concept	Answer
+Assignment	Agglomerative Hierarchical Clustering
+Dataset	Iris
+Total samples	150
+Total features	4
+Algorithm	Agglomerative Clustering
+Learning type	Unsupervised
+Number of clusters	3
+Distance metric	Euclidean
+Linkage method	Ward
+Preprocessing	StandardScaler
+Evaluation	Silhouette Score
+Dendrogram library	SciPy
+Silhouette Score	0.4467
+Cluster 0	71
+Cluster 1	49
+Cluster 2	30
+6. IMPORTANT POINTS TO REMEMBER
+1.	Agglomerative clustering follows a bottom-up approach.
+2.	Each sample initially forms its own cluster.
+3.	Similar clusters are merged step by step.
+4.	Ward linkage minimizes the increase in within-cluster variance.
+5.	StandardScaler is used before distance-based clustering.
+6.	A dendrogram visualizes the merging process.
+7.	Silhouette Score evaluates cluster quality.
+8.	The Iris target labels are not used to train this model.
+Most important viva questions: What is agglomerative clustering? What is Ward linkage? What is a dendrogram? Why do we use StandardScaler? What is the Silhouette Score?
+
